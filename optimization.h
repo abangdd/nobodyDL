@@ -1,0 +1,104 @@
+#ifndef OPTIMIZATION_H_
+#define OPTIMIZATION_H_
+
+#include "tensor.h"
+#include "sparse.h"
+
+enum optim_t
+{ kLBFGS = 1,
+  kVSGD	 = 2
+};
+
+class ParaOptim {
+public:
+  ParaOptim ();
+  int get_optim_type (const char *t);
+  void get_optim_info ();
+  void set_lrate (const int epoch);
+public:
+  int type;
+  int algo;
+  int lossType;
+  bool isFixed;
+  float wd;
+  float momentum;
+  float lrate;
+  float lr_alpha;
+  int   lr_steps;
+  vector<int> lr_decay;
+};
+
+template <typename XPU, typename DT>
+class OptimBase {
+public:
+  OptimBase (ParaOptim &po, Tensor<XPU, DT> &weight, Tensor<XPU, DT> &wgrad) : para_(po), wmat_(weight), gmat_(wgrad)  { }
+  virtual ~OptimBase () { };
+  virtual void update () = 0;
+  virtual void get_direction (const int k) = 0;
+  virtual void optimize (SparseBuffer<XPU, DT> &buffer) = 0;
+  void set_cache(SparseTensor<XPU, DT> &data, Tensor<XPU, DT> &label);
+  void get_pred (SparseTensor<XPU, DT> &data, Tensor<XPU, DT> &pred);
+  void get_grad (SparseTensor<XPU, DT> &data, Tensor<XPU, DT> &label);
+  void get_grad (SparseBuffer<XPU, DT> &buffer);
+  void get_eval (SparseBuffer<XPU, DT> &buffer, DT &loss);
+  bool line_search_backtracking (SparseBuffer<XPU, DT> &buffer, const Tensor<XPU, DT> &dir,
+    Tensor<XPU, DT> &wvec, Tensor<XPU, DT> &gvec, int &evals, int maxEvals);
+  bool line_search (SparseBuffer<XPU, DT> &buffer, const Tensor<XPU, DT> &dir,
+    Tensor<XPU, DT> &wvec, Tensor<XPU, DT> &gvec, int &evals, int maxEvals);
+public:
+  ParaOptim &para_;
+  Tensor<XPU, DT> &wmat_, &gmat_;
+  Tensor<XPU, DT> dloss_;
+  Tensor<XPU, DT> invc_;
+  DT loss_k, step_length;
+private:
+  DT alpha_0, alpha_j, alpha_low, alpha_high;
+  DT f_phi_0, f_phi_j, f_phi_low, f_phi_high, f_phi_alpha;
+  DT d_phi_0, d_phi_j, d_phi_low, d_phi_high, d_phi_alpha;  // directional derivative
+};
+
+typedef OptimBase<GPU, float>  OptimBaseGPUf;
+typedef OptimBase<CPU, float>  OptimBaseCPUf;
+typedef OptimBase<GPU, double> OptimBaseGPUd;
+typedef OptimBase<CPU, double> OptimBaseCPUd;
+
+template <typename XPU, typename DT>
+class OptimVSGD : public OptimBase<XPU, DT> {
+public:
+  OptimVSGD (ParaOptim &po, Tensor<XPU, DT> &weight, Tensor<XPU, DT> &wgrad);
+  void get_direction (const int k) { };
+  void update ();
+  void update_sgd ();
+  void update_nag ();
+  void update_adam ();
+  void optimize (SparseBuffer<XPU, DT> &buffer);
+private:
+  ParaOptim &para_;
+  Tensor<XPU, DT> &wmat_, &gmat_;
+  Tensor<XPU, DT> mmat_, vmat_, hmat_;
+  int epoch;
+};
+
+template <typename XPU, typename DT>
+class OptimLBFGS : public OptimBase<XPU, DT> {
+public:
+  OptimLBFGS (ParaOptim &po, Tensor<XPU, DT> &weight, Tensor<XPU, DT> &wgrad);
+  void get_direction (const int k);
+  void set_s_y_rho_h (const int k);
+  void update () { }
+  void optimize (SparseBuffer<XPU, DT> &buffer);
+  bool terminate ();
+private:
+  Tensor<XPU, DT> dir;
+  Tensor<XPU, DT> smat_,  ymat_;
+  Tensor<XPU, DT> wvec_k, wvec_j;
+  Tensor<XPU, DT> gvec_k, gvec_j;
+  std::vector<DT> alpha, beta, rho;
+  DT H0;
+  int hsize;
+};
+
+template <typename XPU, typename DT>
+OptimBase<XPU, DT>* create_optim (ParaOptim &po, Tensor<XPU, DT> &weight, Tensor<XPU, DT> &wgrad);
+
+#endif
