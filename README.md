@@ -1,5 +1,5 @@
 # vision
-learnForest.cpp 是几年前写的，现不再维护，有需要时重构
+###learnForest.cpp 是几年前写的，现不再维护，有需要时重构
 nnet.h  神经网络头文件
 nnetConvolution.cpp 神经网络卷基层
 nnetModel.cpp 神经网络训练+预测
