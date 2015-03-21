@@ -66,7 +66,8 @@ template <typename XPU>
 void NNetModel<XPU>::update ()
 { fprop (true);
   for (size_t i = layers_.size(); i > 0; --i)
-    layers_[i-1]->bprop (i != 1);
+    if (!layers_[i-1]->pl_.isFixed)
+      layers_[i-1]->bprop (i != 1);
   for (size_t i = 0; i < optims_.size(); ++i)
     if (!optims_[i]->para_.isFixed)
       optims_[i]->update ();
