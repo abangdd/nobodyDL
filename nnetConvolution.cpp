@@ -10,11 +10,11 @@ template LayerConvolution<CPU>::LayerConvolution (ParaLayer &pl, TensorCPUf &src
 #endif
 
 LAYER_FORWARD (LayerConvolution)
-{ if (is_train)
+{ if (is_train && !pl_.isFixed)
   { mwmat_.reduce_mean     (wmat_, 4);
     wmat_.broadcast_minus (mwmat_, 4);
   }
-  if (is_train && pl_.isVarN)
+  if (is_train && !pl_.isFixed && pl_.isVarN)
   { nwmat_.reduce_var      (wmat_, 4);  nwmat_.add (1e-8f);  nwmat_.blas_vsqrt (nwmat_);
     wmat_.broadcast_div   (nwmat_, 4);
     wmat_.broadcast_mul    (scal_, 4);
@@ -41,9 +41,7 @@ LAYER_FORWARD (LayerConvolution)
 }
 
 LAYER_BACKPROP (LayerConvolution)
-{ if (pl_.isFixed)
-    return;
-  gwmat_.mem_set(0);
+{ gwmat_.mem_set(0);
   gbias_.mem_set(0);
 #ifdef __CUDACC__
   cuda_check (cudnnConvolutionBackwardBias   (handle_,
