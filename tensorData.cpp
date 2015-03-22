@@ -114,7 +114,7 @@ void DataBuffer<float>::read_image (const TensorFormat &format, const TensorCPUf
   cnums_ = 0;
 //#pragma omp parallel for
   for (int i = 0; i < data_.nums(); ++i)
-  { const int idx = format.isTrain ? rand () % lnums_ : curr_no_ + i;
+  { const int idx = curr_no_ + i;
      data_.read_image_data  (format, image_.img_list[idx], i, mean);
     label_.read_image_label (image_, image_.img_list[idx], i);
     cnums_ += 1;
