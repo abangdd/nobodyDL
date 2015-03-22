@@ -109,7 +109,10 @@ void NNetModel<XPU>::train ()
    test_.read (para_.dataTest_);
   train_.data_.sub_mean (mean_);
    test_.data_.sub_mean (mean_);
-
+#ifdef __CUDACC__
+  train_.page_lock ();
+   test_.page_lock ();
+#endif
   for (int r = 0; r < max_round; ++r)
   { train_epoch (train_);
     for (size_t i = 0; i < optims_.size(); ++i)
