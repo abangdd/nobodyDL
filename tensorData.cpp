@@ -63,7 +63,15 @@ void TensorCPUf::sub_image (const TensorCPUf &src)
 
 
 
-#ifndef __CUDACC__
+#ifdef __CUDACC__
+template <typename DT>
+void DataBuffer<DT>::page_lock ()
+{ cuda_check (cudaHostRegister ( data_.dptr,  data_.size_d(), cudaHostRegisterPortable));
+  cuda_check (cudaHostRegister ( pred_.dptr,  pred_.size_d(), cudaHostRegisterPortable));
+  cuda_check (cudaHostRegister (label_.dptr, label_.size_d(), cudaHostRegisterPortable));
+}
+template void DataBuffer<float>::page_lock ();
+#else
 template <typename DT>
 void DataBuffer<DT>::reset ()
 { cnums_ = 0;
