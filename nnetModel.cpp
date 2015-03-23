@@ -1,6 +1,7 @@
 #ifndef NNET_MODEL_
 #define NNET_MODEL_
 
+#include <algorithm>
 #include <thread>
 #include "../include/nnet.h"
 
@@ -128,6 +129,7 @@ void NNetModel<XPU>::train_epoch (DataBuffer<float> &buffer)
   const int numBuffers = buffer.lnums_ / buffer.data_.nums();
   const int numBatches = buffer.data_.nums() / mini_batch;
   const int numEvals = para_.num_evals;
+  std::random_shuffle (buffer.image_.img_list.begin(), buffer.image_.img_list.end());
 
   for (int i = 0; i < numBuffers; ++i)
   { para_.tFormat_.isTrain = true;
