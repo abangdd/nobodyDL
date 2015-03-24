@@ -12,8 +12,7 @@ using std::min;
 enum neuron_t
 { RELU		= 1,
   SIGMOID	= 2,
-  TANH		= 3,
-  MAXOUT	= 4
+  TANH		= 3
 };
 
 enum pool_t
@@ -41,7 +40,7 @@ enum layer_t
 
 class ParaLayer {
 public:
-  explicit ParaLayer () { };
+  explicit ParaLayer () : isLoad(false), isFixed(false) { };
   string get_layer_type ();
 #ifdef __CUDACC__
   void setPoolingDescriptor (cudnnPoolingDescriptor_t &desc);
@@ -63,6 +62,7 @@ public:
 template <typename XPU>
 class LayerBase {
 public:
+  LayerBase (ParaLayer &pl) : pl_(pl) { };
   virtual ~LayerBase () { };
   // is_train the propagation is training or dropout
   virtual void fprop (const bool is_train) = 0;
@@ -74,11 +74,12 @@ public:
   virtual void load_model (const string file) { };
   virtual void show_model () { };
   virtual void set_optimization (ParaOptim &paraWmat, ParaOptim &paraBias, vector<OptimBase<XPU, float>*> &optims) { };
+  ParaLayer pl_;
 };
 
 #define LAYER_CONSTRUCTOR(layername) \
   layername (ParaLayer &pl, Tensor<XPU, float> &src, Tensor<XPU, float> &dst) \
-  : pl_(pl), src_(src), dst_(dst), alpha(1.), beta(0.) \
+  : LayerBase<XPU> (pl), pl_(pl), src_(src), dst_(dst), alpha(1.), beta(0.) \
   { init_layer ();  }
 
 #define LAYER_FORWARD(layername) \
@@ -108,7 +109,7 @@ public:
   float alpha, beta
 
 #define MODEL_MEMBER \
-  Tensor<XPU, float> rep_; \
+  Tensor<XPU, float> drep_,  nrep_; \
   Tensor<XPU, float> wmat_, gwmat_; \
   Tensor<XPU, float> bias_, gbias_; \
   Tensor<XPU, float> scal_, gscal_
