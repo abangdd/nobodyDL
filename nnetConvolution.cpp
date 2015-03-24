@@ -32,9 +32,9 @@ LAYER_FORWARD (LayerConvolution)
     tdst_ = dst_[i];
     tsrc_.im2col_fprop (patch_, tcol_);
 
-    tdst_.shape.set_cols (rep_.rows());
+    tdst_.shape.set_cols (drep_.rows());
     tdst_.shape.set_chls (1);
-    tdst_.blas_gemm (false, true, bias_, rep_, 1, 0);  // Y = B * 1.t()
+    tdst_.blas_gemm (false, true,  bias_, drep_, 1, 0);  // Y = B * 1.t()
     tdst_.blas_gemm (false, false, wmat_, tcol_, 1, 1);  // Y += W * X
   }
 #endif
@@ -60,9 +60,9 @@ LAYER_BACKPROP (LayerConvolution)
     tdst_ = dst_[i];
     tsrc_.im2col_fprop (patch_, tcol_);
 
-    tdst_.shape.set_cols (rep_.rows());
+    tdst_.shape.set_cols (drep_.rows());
     tdst_.shape.set_chls (1);
-    gbias_.blas_gemv (false, tdst_, rep_, 1, 1);  // dB += dY * 1
+    gbias_.blas_gemv (false, tdst_, drep_, 1, 1);  // dB += dY * 1
     gwmat_.blas_gemm (false, true, tdst_, tcol_, 1, 1);  // dW += dY * X.t()
 
     if (is_prop_grad)
@@ -95,11 +95,11 @@ LAYER_INIT (LayerConvolution)
   patch_ = Patch (pl_.ksize, pl_.pad, pl_.stride);
   Shape col_shape = patch_.get_pack_size (src_[0].shape);
   Shape dst_shape (patch_.h_col, patch_.w_col, flts_, nums_);
-  Shape rep_shape (patch_.h_col* patch_.w_col, 1, 1, 1);
+  Shape dim_shape (patch_.h_col* patch_.w_col, 1, 1, 1);
 
-  dst_.create (dst_shape);
-  rep_.create (rep_shape);
-  rep_.constant (1);
+   dst_.create (dst_shape);
+  drep_.create (dim_shape);
+  drep_.constant (1);
 
 #ifdef __CUDACC__
   cuda_check (cudnnCreate (&handle_));
