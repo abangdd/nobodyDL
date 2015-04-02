@@ -264,14 +264,14 @@ public:
   int num_nodes;
   int num_layers;
   int num_optims;  // wmat和bias合计算一个
+  int num_rounds;
   int num_evals;
 };
 
 template <typename XPU>
 class NNetModel {
 public:
-  NNetModel () : max_round(16), num_iter(0)
-  { }
+  explicit NNetModel () { };
   ~NNetModel()
   { mem_free ();  }
   void mem_free ();
@@ -295,7 +295,6 @@ public:
   DataBuffer<float> train_;
   DataBuffer<float>  test_;
   Tensor<CPU, float> mean_;
-  int max_round, num_iter;
 };
 
 #endif
