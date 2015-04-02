@@ -41,9 +41,9 @@ public:
 class Pool {
 public:
   explicit Pool () { }
-  explicit Pool (int a, int b) : ksize(a), stride(b)  { }
+  explicit Pool (int a, int b, int c) : ksize(a), pad(b), stride(c)  { }
   Shape get_pool_size (const Shape &in);  // 会改变pool
-  int ksize, stride;
+  int ksize, pad, stride;
   int h_pool, w_pool;
 };
 
@@ -112,6 +112,8 @@ public:
   void clear();
   void copy (const Tensor<GPU, DT> &in);
   void copy (const Tensor<CPU, DT> &in);
+  void copy_async (const Tensor<GPU, DT> &in);
+  void copy_async (const Tensor<CPU, DT> &in);
   Tensor<XPU, DT> segment (const int begin, const int end) const;
   Tensor<XPU, DT> operator[] (const int idx) const { return segment (idx, idx+1);  }
   const Tensor<XPU, DT>& operator= (const Tensor<XPU, DT>& t);
@@ -216,6 +218,7 @@ public:
   DataBuffer () : curr_no_(0), lnums_(0) { };
   void reset ();
   void create (const TensorFormat &tf);
+  void page_lock ();
   void read_tensor (const ParaFileData &pd);
   void read_image_list (const ParaFileData &pd);
   void read_image (const TensorFormat &tf, const Tensor<CPU, DT> &mean = Tensor<CPU, DT>());
