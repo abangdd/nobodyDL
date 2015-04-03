@@ -72,7 +72,6 @@ void NNetModel<XPU>::update ()
   for (size_t i = 0; i < optims_.size(); ++i)
     if (!optims_[i]->para_.isFixed)
       optims_[i]->update ();
-  num_iter++;
 }
 
 template <typename XPU>
@@ -114,10 +113,10 @@ void NNetModel<XPU>::train ()
   train_.page_lock ();
    test_.page_lock ();
 #endif
-  for (int r = 0; r < max_round; ++r)
-  { train_epoch (train_);
-    for (size_t i = 0; i < optims_.size(); ++i)
-      optims_[i]->para_.set_lrate (r);
+  for (int r = 0; r < para_.num_rounds; ++r)
+  { for (size_t i = 0; i < optims_.size(); ++i)
+      optims_[i]->para_.set_lrate (r, para_.num_rounds);
+    train_epoch (train_);
   }
 }
 template void NNetModel<GPU>::train ();
