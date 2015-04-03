@@ -9,3 +9,5 @@
     tensor.h  张量头文件
     tensorData.cpp  张量数据处理
     tensorReduce.cpp  张量规约（kernal调度）
+    
+    imagenet112_conv.cfg  imagenet数据集（128*128像素）训练的网络结构，分8层和10层两种
