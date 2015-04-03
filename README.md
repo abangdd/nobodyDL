@@ -8,3 +8,4 @@
     sparse.h  稀疏矩阵头文件
     tensor.h  张量头文件
     tensorData.cpp  张量数据处理
+    tensorReduce.cpp  张量规约（kernal调度）
