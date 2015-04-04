@@ -9,7 +9,7 @@
     sparse.h  稀疏矩阵头文件
     tensor.h  张量头文件
     tensorData.cpp  张量数据处理
-    tensorReduce.cpp  张量规约（kernal调度）
+    tensorReduce.cpp  张量归约（kernal launch部分）
     
     imagenet112_conv.cfg  imagenet数据集（128*128像素）训练的网络结构，分8层和10层两种
     imagenet224_conv.cfg  imagenet数据集（256*256像素）训练的网络结构，分8层和10层两种
