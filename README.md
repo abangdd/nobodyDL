@@ -12,4 +12,4 @@
     tensorReduce.cpp  张量规约（kernal调度）
     
     imagenet112_conv.cfg  imagenet数据集（128*128像素）训练的网络结构，分8层和10层两种
-    imagenet224_conv.cfg  imagenet数据集（256*256像素）训练的网络结构，只8层一种
+    imagenet224_conv.cfg  imagenet数据集（256*256像素）训练的网络结构，分8层和10层两种
