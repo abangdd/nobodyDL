@@ -11,5 +11,5 @@
     tensorData.cpp  张量数据处理
     tensorReduce.cpp  张量归约（kernal launch部分）
     
-    imagenet112_conv.cfg  imagenet数据集（128*128像素）训练的网络结构，分8层和10层两种
-    imagenet224_conv.cfg  imagenet数据集（256*256像素）训练的网络结构，分8层、10层和12层三种
+    imagenet112_conv.cfg  imagenet数据集（128*128像素）训练的网络结构，分 8层和10层两种
+    imagenet224_conv.cfg  imagenet数据集（256*256像素）训练的网络结构，分10层和12层两种
