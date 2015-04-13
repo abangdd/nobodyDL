@@ -75,7 +75,7 @@
 void cuda_set_device (const int device_id);
 int  cuda_get_blocks (const int N);
 
-class XPUContext {
+class XPUCtx {
 public:
   void set (const int device_id);
 #ifdef __CUDACC__
@@ -87,7 +87,7 @@ public:
 #endif
 };
 
-static XPUContext *dnn_context = new XPUContext[2];
+extern XPUCtx *dnn_context;
 
 enum memcpy_t
 { CPU2GPU	= 1,
