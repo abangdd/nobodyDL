@@ -22,6 +22,7 @@
 #endif
 
 #define CUDA_NUM_THREADS 1024
+#define CUDA_NUM_DEVICE  2
 
 #ifdef __CUDACC__
 
@@ -72,22 +73,22 @@
   _Pragma ("omp parallel for") \
   for (int i = XPU_GET_ELEMENT_OFFSET; i < n; i += XPU_GET_ELEMENT_STRIDE)
 
-void cuda_set_device (const int device_id);
+
+
+void cuda_set_device (const int did);
 int  cuda_get_blocks (const int N);
 
 class XPUCtx {
 public:
-  void set (const int device_id);
+  void set (const int did);
 #ifdef __CUDACC__
-  cudaStream_t stream_;
-  cudaEvent_t  event_;
-  cublasHandle_t    cublas_;
-  curandGenerator_t curand_;
-  cudnnHandle_t     cudnn_;
+  cudaStream_t stream_ = nullptr;
+  cudaEvent_t   event_ = nullptr;
+  cublasHandle_t    cublas_ = nullptr;
+  curandGenerator_t curand_ = nullptr;
+  cudnnHandle_t     cudnn_  = nullptr;
 #endif
 };
-
-extern XPUCtx *dnn_context;
 
 enum memcpy_t
 { CPU2GPU	= 1,
@@ -136,5 +137,7 @@ public:
 
 class CPU {
 };
+
+extern std::vector<XPUCtx*> dnnctx;
 
 #endif
