@@ -4,9 +4,9 @@
 #include "../include/nnet.h"
 
 #ifdef __CUDACC__
-template LayerConvolution<GPU>::LayerConvolution (ParaLayer &pl, TensorGPUf &src, TensorGPUf &dst);
+template LayerConvolution<GPU>::LayerConvolution (ParaLayer &pl, const int did, TensorGPUf &src, TensorGPUf &dst);
 #else
-template LayerConvolution<CPU>::LayerConvolution (ParaLayer &pl, TensorCPUf &src, TensorCPUf &dst);
+template LayerConvolution<CPU>::LayerConvolution (ParaLayer &pl, const int did, TensorCPUf &src, TensorCPUf &dst);
 #endif
 
 LAYER_FORWARD (LayerConvolution)
@@ -97,8 +97,8 @@ LAYER_INIT (LayerConvolution)
   Shape dst_shape (patch_.h_col, patch_.w_col, flts_, nums_);
   Shape dim_shape (patch_.h_col* patch_.w_col, 1, 1, 1);
 
-   dst_.create (dst_shape);
-  drep_.create (dim_shape);
+   dst_.create (dst_shape, did_);
+  drep_.create (dim_shape, did_);
   drep_.constant (1);
 
 #ifdef __CUDACC__
@@ -111,7 +111,7 @@ LAYER_INIT (LayerConvolution)
   src_.setTensor4dDescriptor (srcDesc_);
   dst_.setTensor4dDescriptor (dstDesc_);
 #else
-  tcol_.create (col_shape);
+  tcol_.create (col_shape, did_);
 #endif
 }
 
@@ -122,16 +122,16 @@ void LayerConvolution<XPU>::init_model ()
 //Shape wmat_shape (flts_, pl_.ksize * pl_.ksize * chls_, 1, 1);
 //Shape bias_shape (flts_, 1, 1, 1);
 
-   wmat_.create (wmat_shape);
-  gwmat_.create (wmat_shape);
-   bias_.create (bias_shape);
-  gbias_.create (bias_shape);
-   scal_.create (bias_shape);
-  gscal_.create (bias_shape);
+   wmat_.create (wmat_shape, did_);
+  gwmat_.create (wmat_shape, did_);
+   bias_.create (bias_shape, did_);
+  gbias_.create (bias_shape, did_);
+   scal_.create (bias_shape, did_);
+  gscal_.create (bias_shape, did_);
 
-  mwmat_.create (bias_shape);
-  nwmat_.create (bias_shape);
-  iwmat_.create (bias_shape);
+  mwmat_.create (bias_shape, did_);
+  nwmat_.create (bias_shape, did_);
+  iwmat_.create (bias_shape, did_);
 
   wmat_.random (rand_, pl_.random, 0.f, pl_.sigma);
   bias_.constant (pl_.bias);
@@ -171,9 +171,9 @@ void LayerConvolution<XPU>::show_model ()
 
 template <typename XPU>
 void LayerConvolution<XPU>::set_optimization (ParaOptim &paraWmat, ParaOptim &paraBias, vector<OptimBase<XPU, float>*> &optims)
-{ optims.push_back (create_optim (paraWmat, wmat_, gwmat_));
-  optims.push_back (create_optim (paraBias, bias_, gbias_));
-//optims.push_back (create_optim (paraBias, scal_, gscal_));
+{ optims.push_back (create_optim (paraWmat, did_, wmat_, gwmat_));
+  optims.push_back (create_optim (paraBias, did_, bias_, gbias_));
+//optims.push_back (create_optim (paraBias, did_, scal_, gscal_));
 }
 
 #endif
