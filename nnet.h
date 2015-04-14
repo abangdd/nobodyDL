@@ -29,11 +29,9 @@ enum loss_t
 enum layer_t
 { kConvolution	= 1,
   kDropout	= 2,
-  kFlatten	= 3,
   kFullConn	= 4,
   kLoss		= 5,
   kNeuron	= 6,
-  kNormal	= 7,
   kPooling	= 8,
   kSoftmax	= 9
 };
@@ -62,7 +60,7 @@ public:
 template <typename XPU>
 class LayerBase {
 public:
-  LayerBase (ParaLayer &pl) : pl_(pl) { };
+  LayerBase (ParaLayer &pl, const int did) : pl_(pl), did_(did) { };
   virtual ~LayerBase () { };
   // is_train the propagation is training or dropout
   virtual void fprop (const bool is_train) = 0;
@@ -75,11 +73,12 @@ public:
   virtual void show_model () { };
   virtual void set_optimization (ParaOptim &paraWmat, ParaOptim &paraBias, vector<OptimBase<XPU, float>*> &optims) { };
   ParaLayer pl_;
+  int did_;
 };
 
 #define LAYER_CONSTRUCTOR(layername) \
-  layername (ParaLayer &pl, Tensor<XPU, float> &src, Tensor<XPU, float> &dst) \
-  : LayerBase<XPU> (pl), pl_(pl), src_(src), dst_(dst), alpha(1.), beta(0.) \
+  layername (ParaLayer &pl, const int did, Tensor<XPU, float> &src, Tensor<XPU, float> &dst) \
+  : LayerBase<XPU> (pl, did), pl_(pl), did_(did), src_(src), dst_(dst), alpha(1.), beta(0.) \
   { init_layer ();  }
 
 #define LAYER_FORWARD(layername) \
@@ -104,6 +103,7 @@ public:
 
 #define LAYER_MEMBER \
   ParaLayer pl_; \
+  int did_; \
   Tensor<XPU, float> &src_; \
   Tensor<XPU, float> &dst_; \
   float alpha, beta
@@ -172,19 +172,6 @@ private:
 };
 
 template <typename XPU>
-class LayerNormal : public LayerBase<XPU> {
-public:
-  LAYER_CONSTRUCTOR (LayerNormal);
-  LAYER_FUNC ();
-public:
-  LAYER_MEMBER;
-private:
-  Tensor<XPU, float> msrc_;
-  Tensor<XPU, float> nsrc_;
-  Tensor<XPU, float> isrc_;
-};
-
-template <typename XPU>
 class LayerPooling : public LayerBase<XPU> {
 public:
   LAYER_CONSTRUCTOR (LayerPooling);
@@ -245,7 +232,7 @@ private:
 
 
 template<typename XPU>
-LayerBase<XPU>* create_layer (ParaLayer &pl, Tensor<XPU, float> &src, Tensor<XPU, float> &dst);
+LayerBase<XPU>* create_layer (ParaLayer &pl, const int did, Tensor<XPU, float> &src, Tensor<XPU, float> &dst);
 
 class ParaNNet {
 public:
@@ -271,7 +258,7 @@ public:
 template <typename XPU>
 class NNetModel {
 public:
-  explicit NNetModel () { };
+  explicit NNetModel (const int did) : did_(did) { };
   ~NNetModel()
   { mem_free ();  }
   void mem_free ();
@@ -288,6 +275,7 @@ private:
   { for (size_t i = 0; i < layers_.size(); ++i)  layers_[i]->fprop (is_train);  }
 public:
   ParaNNet para_;
+  int did_;
   vector<Tensor<XPU, float> > nodes_;
   vector<LayerBase<XPU>*> layers_;
   vector<OptimBase<XPU, float>*> optims_;
