@@ -5,22 +5,22 @@
 #include <thread>
 #include "../include/nnet.h"
 
-template NNetModel<GPU>::NNetModel ();
-template NNetModel<CPU>::NNetModel ();
+template NNetModel<GPU>::NNetModel (const int did);
+template NNetModel<CPU>::NNetModel (const int did);
 
 template <typename XPU>
 void NNetModel<XPU>::init ()
 { mem_free ();  // TODO
 
   nodes_.resize (para_.num_nodes);
-  nodes_[0].create                 (para_.shape_src);  // TODO
-  nodes_[para_.num_nodes-1].create (para_.shape_dst);  // TODO
+  nodes_[0].create                 (para_.shape_src, did_);  // TODO
+  nodes_[para_.num_nodes-1].create (para_.shape_dst, did_);  // TODO
 
   layers_.clear();
   for (int i = 0; i < para_.num_layers; ++i)
   { ParaLayer pl = para_.paraLayer_[i];
     LOG (INFO) << "\tLayer initializing\t" << para_.paraLayer_[i].get_layer_type();
-    layers_.push_back (create_layer (pl, nodes_[pl.idxs], nodes_[pl.idxd]));
+    layers_.push_back (create_layer (pl, did_, nodes_[pl.idxs], nodes_[pl.idxd]));
   }
 
   for (int i = 0; i < para_.num_nodes; ++i)
