@@ -14,7 +14,7 @@ public:
   ParaOptim ();
   int get_optim_type (const char *t);
   void get_optim_info ();
-  void set_lrate (const int epoch);
+  void set_lrate (const int epoch, const int max_round);
 public:
   int type;
   int algo;
@@ -24,14 +24,14 @@ public:
   float momentum;
   float lrate;
   float lr_alpha;
-  int   lr_steps;
-  vector<int> lr_decay;
+  float lr_base;
 };
 
 template <typename XPU, typename DT>
 class OptimBase {
 public:
-  OptimBase (ParaOptim &po, Tensor<XPU, DT> &weight, Tensor<XPU, DT> &wgrad) : para_(po), wmat_(weight), gmat_(wgrad)  { }
+  OptimBase (ParaOptim &po, const int did, Tensor<XPU, DT> &weight, Tensor<XPU, DT> &wgrad) :
+    para_(po), did_(did), wmat_(weight), gmat_(wgrad)  { }
   virtual ~OptimBase () { };
   virtual void update () = 0;
   virtual void get_direction (const int k) = 0;
@@ -47,6 +47,7 @@ public:
     Tensor<XPU, DT> &wvec, Tensor<XPU, DT> &gvec, int &evals, int maxEvals);
 public:
   ParaOptim &para_;
+  int did_;
   Tensor<XPU, DT> &wmat_, &gmat_;
   Tensor<XPU, DT> dloss_;
   Tensor<XPU, DT> invc_;
@@ -65,7 +66,7 @@ typedef OptimBase<CPU, double> OptimBaseCPUd;
 template <typename XPU, typename DT>
 class OptimVSGD : public OptimBase<XPU, DT> {
 public:
-  OptimVSGD (ParaOptim &po, Tensor<XPU, DT> &weight, Tensor<XPU, DT> &wgrad);
+  OptimVSGD (ParaOptim &po, const int did, Tensor<XPU, DT> &weight, Tensor<XPU, DT> &wgrad);
   void get_direction (const int k) { };
   void update ();
   void update_sgd ();
@@ -74,6 +75,7 @@ public:
   void optimize (SparseBuffer<XPU, DT> &buffer);
 private:
   ParaOptim &para_;
+  int did_;
   Tensor<XPU, DT> &wmat_, &gmat_;
   Tensor<XPU, DT> mmat_, vmat_, hmat_;
   int epoch;
@@ -82,13 +84,14 @@ private:
 template <typename XPU, typename DT>
 class OptimLBFGS : public OptimBase<XPU, DT> {
 public:
-  OptimLBFGS (ParaOptim &po, Tensor<XPU, DT> &weight, Tensor<XPU, DT> &wgrad);
+  OptimLBFGS (ParaOptim &po, const int did, Tensor<XPU, DT> &weight, Tensor<XPU, DT> &wgrad);
   void get_direction (const int k);
   void set_s_y_rho_h (const int k);
   void update () { }
   void optimize (SparseBuffer<XPU, DT> &buffer);
   bool terminate ();
 private:
+  int did_;
   Tensor<XPU, DT> dir;
   Tensor<XPU, DT> smat_,  ymat_;
   Tensor<XPU, DT> wvec_k, wvec_j;
@@ -99,6 +102,6 @@ private:
 };
 
 template <typename XPU, typename DT>
-OptimBase<XPU, DT>* create_optim (ParaOptim &po, Tensor<XPU, DT> &weight, Tensor<XPU, DT> &wgrad);
+OptimBase<XPU, DT>* create_optim (ParaOptim &po, const int did, Tensor<XPU, DT> &weight, Tensor<XPU, DT> &wgrad);
 
 #endif
