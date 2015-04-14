@@ -14,18 +14,23 @@ int main (int argc, char** argv)
   google::ParseCommandLineFlags (&argc, &argv, true);
   google::InitGoogleLogging (argv[0]);
 
-  XPU token;
+  dnnctx.resize (CUDA_NUM_DEVICE);
+  for (int i = 0; i < CUDA_NUM_DEVICE; ++i)
+  { dnnctx[i] = new XPUCtx ();
+    dnnctx[i]->set (i);
+  }
+
   if (FLAGS_gpu >= 0)
     cuda_set_device (FLAGS_gpu);
-  blas_allocate (token);
 //omp_set_num_threads (4);
 //mkl_set_num_threads (4);
 
   libconfig::Config cfg;  cfg.readFile (FLAGS_config.c_str());
-  NNetModel<XPU> model;
+  NNetModel<XPU> model (FLAGS_gpu);
   model.para_.config (cfg);
   model.init ();
   model.train ();
 
-  blas_release (token);
+  for (int i = 0; i < CUDA_NUM_DEVICE; ++i)
+    delete dnnctx[i];
 }
