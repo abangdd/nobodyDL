@@ -55,6 +55,8 @@ enum rand_t
   XAVIER	= 3
 };
 
+void rand_check (const int status);
+
 template <typename XPU>
 class Random {
 public:
@@ -71,20 +73,6 @@ private:
   VSLStreamStatePtr vStream_;
 #endif
 };
-
-
-
-void rand_check (const int status);
-template <typename XPU> void blas_allocate(XPU a);
-template <typename XPU> void blas_release (XPU a);
-
-
-
-#ifdef __CUDACC__
-cublasOperation_t blas_get_trans (bool t);
-#else
-CBLAS_TRANSPOSE   blas_get_trans (bool t);
-#endif
 
 
 class DataImage;
@@ -108,7 +96,7 @@ public:
   explicit Tensor () : shape(), dptr(NULL), cherry(false) {  }
   ~Tensor();
 public:
-  void create (const Shape &s);
+  void create (const Shape &s, const int did = 0);
   void clear();
   void copy (const Tensor<GPU, DT> &in);
   void copy (const Tensor<CPU, DT> &in);
@@ -202,6 +190,7 @@ public:
 public:
   Shape shape;
   DT *dptr;
+  int did_;
   bool cherry;
 };
 
