@@ -1,6 +1,7 @@
 # vision
     learnForest.cpp 是几年前写的，现不再维护，有需要时重构
     nnet.h  神经网络头文件
+    nnetBase.cpp  神经网络配置解析
     nnetConvolution.cpp 神经网络卷积层
     nnetModel.cpp 神经网络训练+预测
     optimization.h  优化算法头文件
