@@ -4,19 +4,19 @@
 #include "../include/optimization.h"
 
 template <typename XPU, typename DT>
-OptimVSGD<XPU, DT>::OptimVSGD (ParaOptim &po, Tensor<XPU, DT> &weight, Tensor<XPU, DT> &wgrad) :
-  OptimBase<XPU, DT> (po, weight, wgrad), para_(po), wmat_(weight), gmat_(wgrad), epoch(0)
-{ mmat_.create (wmat_.shape);  mmat_.mem_set (0);
-  hmat_.create (wmat_.shape);  hmat_.mem_set (0);
+OptimVSGD<XPU, DT>::OptimVSGD (ParaOptim &po, const int did, Tensor<XPU, DT> &weight, Tensor<XPU, DT> &wgrad) :
+  OptimBase<XPU, DT> (po, did, weight, wgrad), para_(po), did_(did), wmat_(weight), gmat_(wgrad), epoch(0)
+{ mmat_.create (wmat_.shape, did_);  mmat_.mem_set (0);
+  hmat_.create (wmat_.shape, did_);  hmat_.mem_set (0);
 if (para_.algo == 2)
-  vmat_.create (wmat_.shape);  vmat_.mem_set (0);
+  vmat_.create (wmat_.shape, did_);  vmat_.mem_set (0);
 }
 #ifdef __CUDACC__
-template OptimVSGD<GPU, float >::OptimVSGD (ParaOptim &po, TensorGPUf &weight, TensorGPUf &wgrad);
-template OptimVSGD<GPU, double>::OptimVSGD (ParaOptim &po, TensorGPUd &weight, TensorGPUd &wgrad);
+template OptimVSGD<GPU, float >::OptimVSGD (ParaOptim &po, const int did, TensorGPUf &weight, TensorGPUf &wgrad);
+template OptimVSGD<GPU, double>::OptimVSGD (ParaOptim &po, const int did, TensorGPUd &weight, TensorGPUd &wgrad);
 #else
-template OptimVSGD<CPU, float >::OptimVSGD (ParaOptim &po, TensorCPUf &weight, TensorCPUf &wgrad);
-template OptimVSGD<CPU, double>::OptimVSGD (ParaOptim &po, TensorCPUd &weight, TensorCPUd &wgrad);
+template OptimVSGD<CPU, float >::OptimVSGD (ParaOptim &po, const int did, TensorCPUf &weight, TensorCPUf &wgrad);
+template OptimVSGD<CPU, double>::OptimVSGD (ParaOptim &po, const int did, TensorCPUd &weight, TensorCPUd &wgrad);
 #endif
 
 template <typename XPU, typename DT>
