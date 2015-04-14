@@ -6,29 +6,29 @@
 using std::min;
 
 template <typename XPU, typename DT>
-OptimLBFGS<XPU, DT>::OptimLBFGS (ParaOptim &po, Tensor<XPU, DT> &weight, Tensor<XPU, DT> &wgrad) :
-  OptimBase<XPU, DT> (po, weight, wgrad), H0(1.f), hsize(8)
+OptimLBFGS<XPU, DT>::OptimLBFGS (ParaOptim &po, const int did, Tensor<XPU, DT> &weight, Tensor<XPU, DT> &wgrad) :
+  OptimBase<XPU, DT> (po, did, weight, wgrad), did_(did), H0(1.f), hsize(8)
 { const int numFeat = this->wmat_.rows();  // TODO
 
-  wvec_j.create (this->wmat_.shape);
-  gvec_j.create (this->wmat_.shape);
-  dir   .create (this->wmat_.shape);
+  wvec_j.create (this->wmat_.shape, did_);
+  gvec_j.create (this->wmat_.shape, did_);
+  dir   .create (this->wmat_.shape, did_);
 
   // treat arrays as ring buffers!
   Shape s_shape (hsize, numFeat, 1, 1);
-  smat_.create (s_shape);
-  ymat_.create (s_shape);
+  smat_.create (s_shape, did_);
+  ymat_.create (s_shape, did_);
 
   alpha.assign (hsize, 0);
   beta .assign (hsize, 0);
   rho  .assign (hsize, 0);
 }
 #ifdef __CUDACC__
-template OptimLBFGS<GPU, float >::OptimLBFGS (ParaOptim &po, TensorGPUf &weight, TensorGPUf &wgrad);
-template OptimLBFGS<GPU, double>::OptimLBFGS (ParaOptim &po, TensorGPUd &weight, TensorGPUd &wgrad);
+template OptimLBFGS<GPU, float >::OptimLBFGS (ParaOptim &po, const int did, TensorGPUf &weight, TensorGPUf &wgrad);
+template OptimLBFGS<GPU, double>::OptimLBFGS (ParaOptim &po, const int did, TensorGPUd &weight, TensorGPUd &wgrad);
 #else
-template OptimLBFGS<CPU, float >::OptimLBFGS (ParaOptim &po, TensorCPUf &weight, TensorCPUf &wgrad);
-template OptimLBFGS<CPU, double>::OptimLBFGS (ParaOptim &po, TensorCPUd &weight, TensorCPUd &wgrad);
+template OptimLBFGS<CPU, float >::OptimLBFGS (ParaOptim &po, const int did, TensorCPUf &weight, TensorCPUf &wgrad);
+template OptimLBFGS<CPU, double>::OptimLBFGS (ParaOptim &po, const int did, TensorCPUd &weight, TensorCPUd &wgrad);
 #endif
 
 template <typename XPU, typename DT>
