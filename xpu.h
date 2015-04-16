@@ -80,7 +80,8 @@ int  cuda_get_blocks (const int N);
 
 class XPUCtx {
 public:
-  void set (const int did);
+  ~XPUCtx ();
+  void reset (const int did);
 #ifdef __CUDACC__
   cudaStream_t stream_ = nullptr;
   cudaEvent_t   event_ = nullptr;
