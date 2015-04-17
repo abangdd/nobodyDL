@@ -31,7 +31,6 @@
   #endif
 
   #define CUDA_MANAGED true
-  #define USE_CUDNN false
 
   #define XPU_KERNEL(name)		__global__ void name ## _kernel
 
@@ -80,8 +79,10 @@ int  cuda_get_blocks (const int N);
 
 class XPUCtx {
 public:
+  explicit XPUCtx (const int did) : did_(did) { }
   ~XPUCtx ();
-  void reset (const int did);
+  void reset ();
+  int  did_;
 #ifdef __CUDACC__
   cudaStream_t stream_ = nullptr;
   cudaEvent_t   event_ = nullptr;
