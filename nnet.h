@@ -6,6 +6,10 @@
 #include "tensor.h"
 #include "optimization.h"
 
+#ifdef __CUDACC__
+  #define USE_CUDNN true
+#endif
+
 using std::max;
 using std::min;
 
@@ -78,7 +82,7 @@ public:
 
 #define LAYER_CONSTRUCTOR(layername) \
   layername (ParaLayer &pl, const int did, Tensor<XPU, float> &src, Tensor<XPU, float> &dst) \
-  : LayerBase<XPU> (pl, did), pl_(pl), did_(did), src_(src), dst_(dst), alpha(1.), beta(0.) \
+  : LayerBase<XPU> (pl, did), pl_(pl), did_(did), src_(src), dst_(dst), rand_(did), alpha(1.), beta(0.) \
   { init_layer ();  }
 
 #define LAYER_FORWARD(layername) \
@@ -106,6 +110,7 @@ public:
   int did_; \
   Tensor<XPU, float> &src_; \
   Tensor<XPU, float> &dst_; \
+  Random<XPU> rand_; \
   float alpha, beta
 
 #define MODEL_MEMBER \
@@ -130,7 +135,6 @@ private:
   Tensor<XPU, float> tcol_;
   Tensor<XPU, float> tdst_;
   Tensor<XPU, float> mwmat_, nwmat_, iwmat_;
-  Random<XPU> rand_;
   int chls_, nums_, flts_, grps_;
   cudnnTensorDescriptor_t srcDesc_, dstDesc_;
   cudnnTensorDescriptor_t biasDesc_;
@@ -154,7 +158,6 @@ private:
   Tensor<XPU, float> tsrc_;
   Tensor<XPU, float> tdst_;
   Tensor<XPU, float> mwmat_, nwmat_, iwmat_;
-  Random<XPU> rand_;
   int nums_, dims_, chls_;
 };
 
@@ -193,7 +196,6 @@ public:
   LAYER_MEMBER;
 private:
   Tensor<XPU, float> mask;
-  Random<XPU> rand_;
   float drop_, scal_;
 };
 
