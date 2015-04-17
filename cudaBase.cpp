@@ -23,8 +23,12 @@ void XPUCtx::reset ()
   cuda_check (cudaStreamCreate (&stream_));
   cuda_check (cublasCreate (&cublas_));
   cuda_check (curandCreateGenerator (&curand_, CURAND_RNG_PSEUDO_DEFAULT));
-  cuda_check (curandSetPseudoRandomGeneratorSeed (curand_, rand()));
   cuda_check (cudnnCreate  (&cudnn_));
+
+  cuda_check (cublasSetStream (cublas_, stream_));
+  cuda_check (curandSetStream (curand_, stream_));
+  cuda_check (cudnnSetStream  (cudnn_,  stream_));
+  cuda_check (curandSetPseudoRandomGeneratorSeed (curand_, rand()));
 }
 
 void cuda_set_device (const int did)
