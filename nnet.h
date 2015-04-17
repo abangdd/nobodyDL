@@ -132,7 +132,6 @@ private:
   Tensor<XPU, float> mwmat_, nwmat_, iwmat_;
   Random<XPU> rand_;
   int chls_, nums_, flts_, grps_;
-  cudnnHandle_t handle_;
   cudnnTensorDescriptor_t srcDesc_, dstDesc_;
   cudnnTensorDescriptor_t biasDesc_;
   cudnnFilterDescriptor_t wmatDesc_;
@@ -167,7 +166,6 @@ public:
   cudnnActivationMode_t get_activation_type ();
 private:
   LAYER_MEMBER;
-  cudnnHandle_t handle_;
   cudnnTensorDescriptor_t srcDesc_, dstDesc_;
 };
 
@@ -182,7 +180,6 @@ public:
 private:
   Tensor<XPU, float> bsrc_;  // backup
   Tensor<XPU, float> bdst_;  // backup
-  cudnnHandle_t handle_;
   cudnnTensorDescriptor_t srcDesc_, dstDesc_;
   cudnnPoolingDescriptor_t  poolDesc_;
 };
@@ -223,7 +220,6 @@ public:
 public:
   LAYER_MEMBER;
 private:
-  cudnnHandle_t handle_;
   cudnnTensorDescriptor_t srcDesc_, dstDesc_;
   int nums_, dims_;
   float loss_;
