@@ -8,15 +8,16 @@
 std::vector<XPUCtx*> dnnctx;
 
 XPUCtx::~XPUCtx()
-{ cuda_check (cudaStreamDestroy (stream_));
-  cuda_check (cublasDestroy (cublas_));
-  cuda_check (curandDestroyGenerator (curand_));
-  cuda_check (cudnnDestroy  (cudnn_));
+{ printf ("Device\t%d\treleasing\n",    did_);
+  if (cublas_)  cuda_check (cublasDestroy (cublas_));
+  if (curand_)  cuda_check (curandDestroyGenerator (curand_));
+  if (cudnn_ )  cuda_check (cudnnDestroy  (cudnn_));
+  if (stream_)  cuda_check (cudaStreamDestroy (stream_));
 }
 
-void XPUCtx::reset (const int did)
-{ LOG (INFO) << "\tDevice\t" << did << "\tinitializing";
-  cuda_check (cudaSetDevice (did));
+void XPUCtx::reset ()
+{ printf ("Device\t%d\tinitializing\n", did_);
+  cuda_check (cudaSetDevice (did_));
   cuda_check (cudaDeviceReset ());
 
   cuda_check (cudaStreamCreate (&stream_));
