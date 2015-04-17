@@ -105,8 +105,6 @@ void cuda_sync_check  (const char *msg);
 void cuda_async_check (const char *msg);
 
 #ifdef __CUDACC__
-static cublasHandle_t    cublasHandle;
-
 enum cudaMemcpyKind get_memcpy_type (enum memcpy_t kind);
 void cuda_malloc (void **ptr, const size_t len);
 void cuda_memcpy       (void *dst, const void *src, const size_t size, enum memcpy_t kind);
