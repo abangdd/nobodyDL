@@ -20,10 +20,10 @@ LAYER_FORWARD (LayerConvolution)
     wmat_.broadcast_mul    (scal_, 4);
   }
 #ifdef __CUDACC__
-  cuda_check (cudnnConvolutionForward (handle_, 
+  cuda_check (cudnnConvolutionForward (dnnctx[did_]->cudnn_, 
     &alpha,  srcDesc_,  src_.dptr, wmatDesc_, wmat_.dptr, convDesc_, algo_, workspace, worksize,
     &beta,   dstDesc_,  dst_.dptr));
-  cuda_check (cudnnAddTensor (handle_, CUDNN_ADD_SAME_C,
+  cuda_check (cudnnAddTensor (dnnctx[did_]->cudnn_, CUDNN_ADD_SAME_C,
     &alpha, biasDesc_, bias_.dptr,
     &alpha,  dstDesc_,  dst_.dptr));
 #else
@@ -44,14 +44,14 @@ LAYER_BACKPROP (LayerConvolution)
 { gwmat_.mem_set(0);
   gbias_.mem_set(0);
 #ifdef __CUDACC__
-  cuda_check (cudnnConvolutionBackwardBias   (handle_,
+  cuda_check (cudnnConvolutionBackwardBias   (dnnctx[did_]->cudnn_,
     &alpha,  dstDesc_,   dst_.dptr, 
     &beta,  biasDesc_, gbias_.dptr));
-  cuda_check (cudnnConvolutionBackwardFilter (handle_,
+  cuda_check (cudnnConvolutionBackwardFilter (dnnctx[did_]->cudnn_,
     &alpha,  srcDesc_,   src_.dptr, dstDesc_, dst_.dptr, convDesc_,
     &beta,  wmatDesc_, gwmat_.dptr));
   if (is_prop_grad)
-  cuda_check (cudnnConvolutionBackwardData   (handle_,
+  cuda_check (cudnnConvolutionBackwardData   (dnnctx[did_]->cudnn_,
     &alpha, wmatDesc_,  wmat_.dptr, dstDesc_, dst_.dptr, convDesc_,
     &beta,   srcDesc_,   src_.dptr));
 #else
@@ -102,7 +102,6 @@ LAYER_INIT (LayerConvolution)
   drep_.constant (1);
 
 #ifdef __CUDACC__
-  cuda_check (cudnnCreate (&handle_));
   cuda_check (cudnnCreateTensorDescriptor  (&srcDesc_));
   cuda_check (cudnnCreateTensorDescriptor  (&dstDesc_));
   cuda_check (cudnnCreateTensorDescriptor (&biasDesc_));
@@ -142,9 +141,9 @@ void LayerConvolution<XPU>::init_model ()
   cuda_check (cudnnCreateConvolutionDescriptor (&convDesc_));
   cuda_check (cudnnSetConvolution2dDescriptor  ( convDesc_, pl_.pad, pl_.pad, pl_.stride, pl_.stride, 1, 1,
     CUDNN_CROSS_CORRELATION));
-  cuda_check (cudnnGetConvolutionForwardAlgorithm     (handle_, srcDesc_, wmatDesc_, convDesc_, dstDesc_,
+  cuda_check (cudnnGetConvolutionForwardAlgorithm     (dnnctx[did_]->cudnn_, srcDesc_, wmatDesc_, convDesc_, dstDesc_,
     CUDNN_CONVOLUTION_FWD_PREFER_FASTEST, 10e6, &algo_));
-  cuda_check (cudnnGetConvolutionForwardWorkspaceSize (handle_, srcDesc_, wmatDesc_, convDesc_, dstDesc_,
+  cuda_check (cudnnGetConvolutionForwardWorkspaceSize (dnnctx[did_]->cudnn_, srcDesc_, wmatDesc_, convDesc_, dstDesc_,
     algo_, &worksize));
   cuda_malloc ((void**)&workspace, worksize);
 #endif
