@@ -60,13 +60,14 @@ void rand_check (const int status);
 template <typename XPU>
 class Random {
 public:
-  explicit Random ();
+  explicit Random (const int did);
   ~Random();
   void set_seed (int seed);
   void gaussian (float *data, int size, const float mu, const float sigma) const;
   void uniform  (float *data, int size, const float  a, const float b)     const;
   void xavier   (float *data, int size, const int   in, const int out)     const;
 private:
+  int did_;
 #ifdef __CUDACC__
   curandGenerator_t randGen_;
 #else
