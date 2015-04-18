@@ -73,7 +73,7 @@
   for (int i = XPU_GET_ELEMENT_OFFSET; i < n; i += XPU_GET_ELEMENT_STRIDE)
 
 
-
+void cuda_set_p2p ();
 void cuda_set_device (const int did);
 int  cuda_get_blocks (const int N);
 
@@ -89,6 +89,7 @@ public:
   cublasHandle_t    cublas_ = nullptr;
   curandGenerator_t curand_ = nullptr;
   cudnnHandle_t     cudnn_  = nullptr;
+  int cup2p_[CUDA_NUM_DEVICES];
 #endif
 };
 
