@@ -71,11 +71,8 @@ void cuda_memcpy       (void *dst, const void *src, const size_t size, enum memc
 { cuda_check (cudaMemcpy      ((void*)dst, (const void*)src, size, get_memcpy_type(kind)));
 }
 
-void cuda_memcpy_async (void *dst, const void *src, const size_t size, enum memcpy_t kind)
-{ cudaStream_t stream;
-  cuda_check (cudaStreamCreate (&stream));
-  cuda_check (cudaMemcpyAsync ((void*)dst, (const void*)src, size, get_memcpy_type(kind), stream));
-  cuda_check (cudaStreamDestroy (stream));
+void cuda_memcpy_async (void *dst, const void *src, const size_t size, enum memcpy_t kind, cudaStream_t stream)
+{ cuda_check (cudaMemcpyAsync ((void*)dst, (const void*)src, size, get_memcpy_type(kind), stream));
 }
 
 
