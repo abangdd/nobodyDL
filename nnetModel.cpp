@@ -5,137 +5,151 @@
 #include <thread>
 #include "../include/nnet.h"
 
-template NNetModel<GPU>::NNetModel (const int did);
-template NNetModel<CPU>::NNetModel (const int did);
-
 template <typename XPU>
 void NNetModel<XPU>::init ()
-{ mem_free ();  // TODO
-
-  nodes_.resize (para_.num_nodes);
-  nodes_[0].create                 (para_.shape_src, did_);  // TODO
-  nodes_[para_.num_nodes-1].create (para_.shape_dst, did_);  // TODO
-
-  layers_.clear();
-  for (int i = 0; i < para_.num_layers; ++i)
-  { ParaLayer pl = para_.paraLayer_[i];
-    LOG (INFO) << "\tLayer initializing\t" << para_.paraLayer_[i].get_layer_type();
-    layers_.push_back (create_layer (pl, did_, nodes_[pl.idxs], nodes_[pl.idxd]));
-  }
-
-  for (int i = 0; i < para_.num_nodes; ++i)
-    nodes_[i].shape.print ();
-
-  for (int i = 0, j = 0; i < para_.num_layers; ++i)
-    if (para_.paraLayer_[i].type == kConvolution || para_.paraLayer_[i].type == kFullConn)
-    { LOG (INFO) << "\tModel initializing\t" << para_.paraLayer_[i].get_layer_type()
-        << "\t" << para_.paraLayer_[i].sigma << "\t" << para_.paraLayer_[i].scale;
-      layers_[i]->init_model ();
-      para_.paraWmat_[j].get_optim_info ();
-    //para_.paraBias_[j].get_optim_info ();
-      layers_[i]->set_optimization (para_.paraWmat_[j], para_.paraBias_[j], optims_);
-      j++;
+{ for (int did = 0; did < CUDA_NUM_DEVICES; ++did)
+  { cuda_set_device (did);
+    mem_free (did);
+  
+    nodes_[did].resize (para_.num_nodes);
+    nodes_[did][0].create                 (para_.shape_src, did);  // TODO
+    nodes_[did][para_.num_nodes-1].create (para_.shape_dst, did);  // TODO
+  
+    layers_[did].clear();
+    for (int i = 0; i < para_.num_layers; ++i)
+    { ParaLayer pl = para_.paraLayer_[i];
+      LOG (INFO) << "\tLayer initializing\t" << para_.paraLayer_[i].get_layer_type();
+      layers_[did].push_back (create_layer (pl, did, nodes_[did][pl.idxs], nodes_[did][pl.idxd]));
     }
-
-  batch_.data_  = nodes_[0];
-  batch_.pred_  = nodes_[para_.num_nodes - 2];
-  batch_.label_ = nodes_[para_.num_nodes - 1];
-
-  if (para_.model_.if_update)
-  { load_model ();
-  //show_model ();
+  
+    for (int i = 0; i < para_.num_nodes; ++i)
+      nodes_[did][i].shape.print ();
+  
+    for (int i = 0, j = 0; i < para_.num_layers; ++i)
+      if (para_.paraLayer_[i].type == kConvolution || para_.paraLayer_[i].type == kFullConn)
+      { LOG (INFO) << "\tModel initializing\t" << para_.paraLayer_[i].get_layer_type()
+          << "\t" << para_.paraLayer_[i].sigma << "\t" << para_.paraLayer_[i].scale;
+        layers_[did][i]->init_model ();
+        para_.paraWmat_[j].get_optim_info ();
+      //para_.paraBias_[j].get_optim_info ();
+        layers_[did][i]->set_optimization (para_.paraWmat_[j], para_.paraBias_[j], optims_[did]);
+        j++;
+      }
+  
+    batch_[did].data_  = nodes_[did][0];
+    batch_[did].pred_  = nodes_[did][para_.num_nodes - 2];
+    batch_[did].label_ = nodes_[did][para_.num_nodes - 1];
+  
+    if (para_.model_.if_update)
+    { load_model (did);
+    //show_model (did);
+    }
+    mean_[did].load (para_.dataTrain_.mean, did);
   }
-  mean_.load (para_.dataTrain_.mean, did_);
 }
 template void NNetModel<GPU>::init ();
 template void NNetModel<CPU>::init ();
 
 template <typename XPU>
-void NNetModel<XPU>::mem_free ()
-{ for (size_t i = 0; i < layers_.size(); ++i)
-    delete layers_[i];
-  for (size_t i = 0; i < optims_.size(); ++i)
-    delete optims_[i];
-   nodes_.clear();
-  layers_.clear();
-  optims_.clear();
+void NNetModel<XPU>::mem_free (const int did)
+{ cuda_set_device (did);
+  for (size_t i = 0; i < layers_[did].size(); ++i)
+    delete layers_[did][i];
+  for (size_t i = 0; i < optims_[did].size(); ++i)
+    delete optims_[did][i];
+   nodes_[did].clear();
+  layers_[did].clear();
+  optims_[did].clear();
 }
-template void NNetModel<GPU>::mem_free ();
-template void NNetModel<CPU>::mem_free ();
+template void NNetModel<GPU>::mem_free (const int did);
+template void NNetModel<CPU>::mem_free (const int did);
 
 template <typename XPU>
-void NNetModel<XPU>::fprop (const bool is_train)
-{ for (size_t i = 0; i < layers_.size(); ++i)
-    layers_[i]->fprop (is_train);
-}
-
-template <typename XPU>
-void NNetModel<XPU>::bprop ()
-{ for (size_t i = layers_.size(); i > 0; --i)
-    if (!layers_[i-1]->pl_.isFixed)
-      layers_[i-1]->bprop (i != 1);
+void NNetModel<XPU>::fprop (const int did, const bool is_train)
+{ cuda_set_device (did);
+  for (size_t i = 0; i < layers_[did].size(); ++i)
+    layers_[did][i]->fprop (is_train);
 }
 
 template <typename XPU>
-void NNetModel<XPU>::update ()
-{ for (size_t i = 0; i < optims_.size(); ++i)
-    if (!optims_[i]->para_.isFixed)
-      optims_[i]->update ();
+void NNetModel<XPU>::bprop (const int did)
+{ cuda_set_device (did);
+  for (size_t i = layers_[did].size(); i > 0; --i)
+    if (!layers_[did][i-1]->pl_.isFixed)
+      layers_[did][i-1]->bprop (i != 1);
+}
+
+template <typename XPU>
+void NNetModel<XPU>::update (const int did)
+{ cuda_set_device (did);
+  for (size_t i = 0; i < optims_[did].size(); ++i)
+    if (!optims_[did][i]->para_.isFixed)
+      optims_[did][i]->update ();
 }
 
 
 
 template <typename XPU>
-void NNetModel<XPU>::save_model ()
-{ for (int i = 0; i < para_.num_layers; ++i)
+void NNetModel<XPU>::save_model (const int did)
+{ cuda_set_device (did);
+  for (int i = 0; i < para_.num_layers; ++i)
   { char layerid[16];  sprintf (layerid, "%02d", i);
-    layers_[i]->save_model (para_.model_.path+"_layer_"+layerid);
+    layers_[did][i]->save_model (para_.model_.path+"_layer_"+layerid);
   }
 }
-template void NNetModel<GPU>::save_model ();
+template void NNetModel<GPU>::save_model (const int did);
 
 template <typename XPU>
-void NNetModel<XPU>::load_model ()
-{ for (int i = 0; i < para_.num_layers; ++i)
+void NNetModel<XPU>::load_model (const int did)
+{ cuda_set_device (did);
+  for (int i = 0; i < para_.num_layers; ++i)
   { char layerid[16];  sprintf (layerid, "%02d", i);
-    layers_[i]->load_model (para_.model_.path+"_layer_"+layerid);
+    layers_[did][i]->load_model (para_.model_.path+"_layer_"+layerid);
   }
 }
-template void NNetModel<GPU>::load_model ();
+template void NNetModel<GPU>::load_model (const int did);
 
 template <typename XPU>
-void NNetModel<XPU>::show_model ()
-{ for (int i = 0; i < para_.num_layers; ++i)
-    layers_[i]->show_model ();
+void NNetModel<XPU>::show_model (const int did)
+{ cuda_set_device (did);
+  for (int i = 0; i < para_.num_layers; ++i)
+    layers_[did][i]->show_model ();
 }
-template void NNetModel<GPU>::show_model ();
+template void NNetModel<GPU>::show_model (const int did);
 
 
 
 template <typename XPU>
 void NNetModel<XPU>::train ()
-{ train_.create (para_.tFormat_, did_);
-   test_.create (para_.tFormat_, did_);
-  train_.read (para_.dataTrain_);
-   test_.read (para_.dataTest_);
-  train_.data_.sub_mean (mean_);
-   test_.data_.sub_mean (mean_);
+{ for (int did = 0; did < CUDA_NUM_DEVICES; ++did)
+  { cuda_set_device (did);
+
+    train_[did].create (para_.tFormat_, did);
+     test_[did].create (para_.tFormat_, did);
+    train_[did].read (para_.dataTrain_);
+     test_[did].read (para_.dataTest_);
+    train_[did].data_.sub_mean (mean_[did]);
+     test_[did].data_.sub_mean (mean_[did]);
 #ifdef __CUDACC__
-  train_.page_lock ();
-   test_.page_lock ();
+    train_[did].page_lock ();
+     test_[did].page_lock ();
 #endif
-  for (int r = 0; r < para_.num_rounds; ++r)
-  { for (size_t i = 0; i < optims_.size(); ++i)
-      optims_[i]->para_.set_lrate (r, para_.num_rounds);
-    train_epoch (train_);
+  }
+  for (int did = 0; did < CUDA_NUM_DEVICES; ++did)
+  { cuda_set_device (did);
+    for (int r = 0; r < para_.num_rounds; ++r)
+    { for (size_t i = 0; i < optims_[did].size(); ++i)
+        optims_[did][i]->para_.set_lrate (r, para_.num_rounds);
+      train_epoch (train_[did], did);
+    }
   }
 }
 template void NNetModel<GPU>::train ();
 template void NNetModel<CPU>::train ();
 
 template <typename XPU>
-void NNetModel<XPU>::train_epoch (DataBuffer<float> &buffer)
-{ const int mini_batch = batch_.data_.nums();
+void NNetModel<XPU>::train_epoch (DataBuffer<float> &buffer, const int did)
+{ const int mini_batch = batch_[did].data_.nums();
   const int numBuffers = buffer.lnums_ / buffer.data_.nums();
   const int numBatches = buffer.data_.nums() / mini_batch;
   const int numEvals = para_.num_evals;
@@ -145,33 +159,33 @@ void NNetModel<XPU>::train_epoch (DataBuffer<float> &buffer)
   { para_.tFormat_.isTrain = true;
     if (para_.dataTrain_.type == "image")
     { buffer.reset ();
-      std::thread (&DataBuffer<float>::read_image, &buffer, std::ref(para_.tFormat_), std::ref(mean_)).detach ();
+      std::thread (&DataBuffer<float>::read_image, &buffer, std::ref(para_.tFormat_), std::ref(mean_[did])).detach ();
     }
 
-    batch_.reset ();
+    batch_[did].reset ();
     for (int j = 0; j < numBatches; ++j)
     { while (buffer.cnums_ < (j+1)*mini_batch)
         sleep (0.001);
       if (para_.dataTrain_.type == "image")
-        batch_.copy (buffer);
+        batch_[did].copy (buffer);
       else
-        batch_.rand (buffer);
-      fprop (true);
-      bprop ();
-      update();
-      batch_.next (buffer);
+        batch_[did].rand (buffer);
+      fprop (did, true);
+      bprop (did);
+      update(did);
+      batch_[did].next (buffer);
     }
 
     if ((i+1) % (numBuffers/numEvals) == 0)
-    { eval_epoch ( test_);
-      save_model ();
+    { eval_epoch ( test_[did], did);
+      save_model (did);
     }
   }
 }
 
 template <typename XPU>
-void NNetModel<XPU>::eval_epoch (DataBuffer<float> &buffer)
-{ const int mini_batch = batch_.data_.nums();
+void NNetModel<XPU>::eval_epoch (DataBuffer<float> &buffer, const int did)
+{ const int mini_batch = batch_[did].data_.nums();
   const int numBuffers = buffer.lnums_ / buffer.data_.nums();
   const int numBatches = buffer.data_.nums() / mini_batch;
 
@@ -180,17 +194,17 @@ void NNetModel<XPU>::eval_epoch (DataBuffer<float> &buffer)
   { para_.tFormat_.isTrain = false;
     if (para_.dataTest_.type == "image")
     { buffer.reset ();
-      std::thread (&DataBuffer<float>::read_image, &buffer, std::ref(para_.tFormat_), std::ref(mean_)).detach ();
+      std::thread (&DataBuffer<float>::read_image, &buffer, std::ref(para_.tFormat_), std::ref(mean_[did])).detach ();
     }
 
-    batch_.reset ();
+    batch_[did].reset ();
     for (int j = 0; j < numBatches; ++j)
     { while (buffer.cnums_ < (j+1)*mini_batch)
         sleep (0.001);
-      batch_.copy (buffer);
-      fprop (false);
-      batch_.send (buffer);
-      batch_.next (buffer);
+      batch_[did].copy (buffer);
+      fprop (did, false);
+      batch_[did].send (buffer);
+      batch_[did].next (buffer);
     }
     buffer.evaluate (test_err);
   }
