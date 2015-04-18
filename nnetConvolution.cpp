@@ -102,6 +102,7 @@ LAYER_INIT (LayerConvolution)
   drep_.constant (1);
 
 #if USE_CUDNN
+  cuda_check (cudnnSetStream (dnnctx[did_]->cudnn_, dnnctx[did_]->stream_));
   cuda_check (cudnnCreateTensorDescriptor  (&srcDesc_));
   cuda_check (cudnnCreateTensorDescriptor  (&dstDesc_));
   cuda_check (cudnnCreateTensorDescriptor (&biasDesc_));
