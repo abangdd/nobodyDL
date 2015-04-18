@@ -19,7 +19,7 @@ LAYER_FORWARD (LayerConvolution)
     wmat_.broadcast_div   (nwmat_, 4);
     wmat_.broadcast_mul    (scal_, 4);
   }
-#ifdef __CUDACC__
+#if USE_CUDNN
   cuda_check (cudnnConvolutionForward (dnnctx[did_]->cudnn_, 
     &alpha,  srcDesc_,  src_.dptr, wmatDesc_, wmat_.dptr, convDesc_, algo_, workspace, worksize,
     &beta,   dstDesc_,  dst_.dptr));
@@ -43,7 +43,7 @@ LAYER_FORWARD (LayerConvolution)
 LAYER_BACKPROP (LayerConvolution)
 { gwmat_.mem_set(0);
   gbias_.mem_set(0);
-#ifdef __CUDACC__
+#if USE_CUDNN
   cuda_check (cudnnConvolutionBackwardBias   (dnnctx[did_]->cudnn_,
     &alpha,  dstDesc_,   dst_.dptr, 
     &beta,  biasDesc_, gbias_.dptr));
@@ -101,7 +101,7 @@ LAYER_INIT (LayerConvolution)
   drep_.create (dim_shape, did_);
   drep_.constant (1);
 
-#ifdef __CUDACC__
+#if USE_CUDNN
   cuda_check (cudnnCreateTensorDescriptor  (&srcDesc_));
   cuda_check (cudnnCreateTensorDescriptor  (&dstDesc_));
   cuda_check (cudnnCreateTensorDescriptor (&biasDesc_));
@@ -135,7 +135,7 @@ void LayerConvolution<XPU>::init_model ()
   wmat_.random (rand_, pl_.random, 0.f, pl_.sigma);
   bias_.constant (pl_.bias);
   scal_.constant (pl_.scale);
-#ifdef __CUDACC__
+#if USE_CUDNN
   bias_.setTensor4dDescriptor (biasDesc_);
   wmat_.setFilter4dDescriptor (wmatDesc_);
   cuda_check (cudnnCreateConvolutionDescriptor (&convDesc_));
@@ -158,8 +158,8 @@ void LayerConvolution<XPU>::save_model (const string file)
 template <typename XPU>
 void LayerConvolution<XPU>::load_model (const string file)
 { if (pl_.isLoad)
-  { wmat_.load (file+"_wmat");
-    bias_.load (file+"_bias");
+  { wmat_.load (file+"_wmat", did_);
+    bias_.load (file+"_bias", did_);
   }
 }
 
