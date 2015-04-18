@@ -94,19 +94,18 @@ public:
 template <typename XPU, typename DT>
 class Tensor : public XPU {
 public:
-  explicit Tensor () : shape(), dptr(NULL), cherry(false) {  }
-  ~Tensor();
+  explicit Tensor () : shape(), dptr(NULL), did_(0), cherry(false) { }
+  ~Tensor ();
 public:
   void create (const Shape &s, const int did = 0);
   void clear();
   void copy (const Tensor<GPU, DT> &in);
   void copy (const Tensor<CPU, DT> &in);
-  void copy_async (const Tensor<GPU, DT> &in);
-  void copy_async (const Tensor<CPU, DT> &in);
   Tensor<XPU, DT> segment (const int begin, const int end) const;
   Tensor<XPU, DT> operator[] (const int idx) const { return segment (idx, idx+1);  }
   const Tensor<XPU, DT>& operator= (const Tensor<XPU, DT>& t);
 private:
+  void stream_sync () const;
   void mem_alloc();
   void mem_free ();
 public:
@@ -117,7 +116,7 @@ public:
   void memcpy_to_cpu (void *ptr) const;
 public:
   void save (const string file);
-  void load (const string file);
+  void load (const string file, const int did);
   void show_image ();
   void read_image_data (const TensorFormat &tf, const string &file, const int idx, const Tensor<XPU, DT> &mean);
   void read_image_label (const DataImage &dimg, const string &file, const int idx);
@@ -177,12 +176,12 @@ public:
   void sub_mean (const Tensor<XPU, DT> &mean);
   void sub_image (const Tensor<XPU, DT> &src);
 public:
-  int rows () const { return shape.rows;  };
-  int cols () const { return shape.cols;  };
-  int chls () const { return shape.chls;  };
-  int nums () const { return shape.nums;  };
-  int size () const { return shape.size;  };
-  size_t size_d () const { return shape.size * sizeof(DT);  };
+  int rows () const { return shape.rows;  }
+  int cols () const { return shape.cols;  }
+  int chls () const { return shape.chls;  }
+  int nums () const { return shape.nums;  }
+  int size () const { return shape.size;  }
+  size_t size_d () const { return shape.size * sizeof(DT);  }
   void print (const int cnt) const;
 #ifdef __CUDACC__
   void setTensor4dDescriptor (cudnnTensorDescriptor_t &desc);
@@ -205,9 +204,9 @@ typedef Tensor<CPU, double> TensorCPUd;
 template <typename DT>
 class DataBuffer {
 public:
-  DataBuffer () : curr_no_(0), lnums_(0) { };
+  DataBuffer () : did_(0), curr_no_(0), lnums_(0) { }
   void reset ();
-  void create (const TensorFormat &tf);
+  void create (const TensorFormat &tf, const int did);
   void page_lock ();
   void read_tensor (const ParaFileData &pd);
   void read_image_list (const ParaFileData &pd);
@@ -221,6 +220,7 @@ public:
   Tensor<CPU, DT>  pred_;
   Tensor<CPU, DT> label_;
   DataImage       image_;
+  int did_;
   int curr_no_;
   int lnums_, cnums_;
 };
@@ -228,7 +228,7 @@ public:
 template <typename XPU, typename DT>
 class DataBatch {
 public:
-  DataBatch () : curr_no_(0) { };
+  DataBatch () : did_(0), curr_no_(0) { }
   void reset ();
   bool check ();
   void copy (const DataBuffer<DT> &in);
@@ -238,6 +238,7 @@ public:
   Tensor<XPU, DT>  data_;
   Tensor<XPU, DT>  pred_;
   Tensor<XPU, DT> label_;
+  int did_;
   int curr_no_;
   int next_no_;
 };
