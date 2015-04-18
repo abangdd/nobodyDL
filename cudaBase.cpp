@@ -31,6 +31,20 @@ void XPUCtx::reset ()
   cuda_check (curandSetPseudoRandomGeneratorSeed (curand_, rand()));
 }
 
+void cuda_set_p2p ()
+{ for (int did = 0; did < CUDA_NUM_DEVICES; ++did)
+  { cuda_set_device (did);
+    for (int pid = 0; pid < CUDA_NUM_DEVICES; ++pid)
+      if (pid != did)
+      { dnnctx[did]->cup2p_[pid] = 0;
+        cuda_check (cudaDeviceCanAccessPeer (&dnnctx[did]->cup2p_[pid], did, pid));
+        if (dnnctx[did]->cup2p_[pid])
+          cuda_check (cudaDeviceEnablePeerAccess (pid, 0));
+      } else
+        dnnctx[did]->cup2p_[pid] = 1;
+  }
+}
+
 void cuda_set_device (const int did)
 { int curr_device;
   cuda_check (cudaGetDevice (&curr_device));
