@@ -256,21 +256,21 @@ public:
 template <typename XPU>
 class NNetModel {
 public:
-  explicit NNetModel (const int did) : did_(did) { };
+  explicit NNetModel (const int did) : did_(did) { }
   ~NNetModel()
   { mem_free ();  }
   void mem_free ();
-  void init ();
+  void init  ();
   void train ();
-  void update ();
   void save_model ();
   void load_model ();
   void show_model ();
 private:
   void train_epoch (DataBuffer<float> &buffer);
   void  eval_epoch (DataBuffer<float> &buffer);
-  void fprop (const bool is_train)
-  { for (size_t i = 0; i < layers_.size(); ++i)  layers_[i]->fprop (is_train);  }
+  void fprop (const bool is_train);
+  void bprop ();
+  void update();
 public:
   ParaNNet para_;
   int did_;
