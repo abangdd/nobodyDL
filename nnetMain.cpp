@@ -14,10 +14,10 @@ int main (int argc, char** argv)
   google::ParseCommandLineFlags (&argc, &argv, true);
   google::InitGoogleLogging (argv[0]);
 
-  dnnctx.resize (CUDA_NUM_DEVICE);
-  for (int i = 0; i < CUDA_NUM_DEVICE; ++i)
-  { dnnctx[i] = new XPUCtx ();
-    dnnctx[i]->set (i);
+  dnnctx.resize (CUDA_NUM_DEVICES);
+  for (int i = 0; i < CUDA_NUM_DEVICES; ++i)
+  { dnnctx[i] = new XPUCtx (i);
+    dnnctx[i]->reset ();
   }
 
   if (FLAGS_gpu >= 0)
@@ -31,6 +31,6 @@ int main (int argc, char** argv)
   model.init ();
   model.train ();
 
-  for (int i = 0; i < CUDA_NUM_DEVICE; ++i)
-    delete dnnctx[i];
+//for (int i = 0; i < CUDA_NUM_DEVICE; ++i)
+//  delete dnnctx[i];
 }
