@@ -22,7 +22,7 @@
 #endif
 
 #define CUDA_NUM_THREADS 1024
-#define CUDA_NUM_DEVICE  2
+#define CUDA_NUM_DEVICES 2
 
 #ifdef __CUDACC__
 
@@ -108,7 +108,7 @@ void cuda_async_check (const char *msg);
 enum cudaMemcpyKind get_memcpy_type (enum memcpy_t kind);
 void cuda_malloc (void **ptr, const size_t len);
 void cuda_memcpy       (void *dst, const void *src, const size_t size, enum memcpy_t kind);
-void cuda_memcpy_async (void *dst, const void *src, const size_t size, enum memcpy_t kind);
+void cuda_memcpy_async (void *dst, const void *src, const size_t size, enum memcpy_t kind, cudaStream_t stream);
 
 const char *cuda_get_status (const cudaError_t    &status);
 const char *cuda_get_status (const cublasStatus_t &status);
