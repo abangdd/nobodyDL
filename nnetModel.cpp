@@ -45,7 +45,7 @@ void NNetModel<XPU>::init ()
   { load_model ();
   //show_model ();
   }
-  mean_.load (para_.dataTrain_.mean);
+  mean_.load (para_.dataTrain_.mean, did_);
 }
 template void NNetModel<GPU>::init ();
 template void NNetModel<CPU>::init ();
@@ -64,15 +64,26 @@ template void NNetModel<GPU>::mem_free ();
 template void NNetModel<CPU>::mem_free ();
 
 template <typename XPU>
-void NNetModel<XPU>::update ()
-{ fprop (true);
-  for (size_t i = layers_.size(); i > 0; --i)
+void NNetModel<XPU>::fprop (const bool is_train)
+{ for (size_t i = 0; i < layers_.size(); ++i)
+    layers_[i]->fprop (is_train);
+}
+
+template <typename XPU>
+void NNetModel<XPU>::bprop ()
+{ for (size_t i = layers_.size(); i > 0; --i)
     if (!layers_[i-1]->pl_.isFixed)
       layers_[i-1]->bprop (i != 1);
-  for (size_t i = 0; i < optims_.size(); ++i)
+}
+
+template <typename XPU>
+void NNetModel<XPU>::update ()
+{ for (size_t i = 0; i < optims_.size(); ++i)
     if (!optims_[i]->para_.isFixed)
       optims_[i]->update ();
 }
+
+
 
 template <typename XPU>
 void NNetModel<XPU>::save_model ()
@@ -103,8 +114,8 @@ template void NNetModel<GPU>::show_model ();
 
 template <typename XPU>
 void NNetModel<XPU>::train ()
-{ train_.create (para_.tFormat_);
-   test_.create (para_.tFormat_);
+{ train_.create (para_.tFormat_, did_);
+   test_.create (para_.tFormat_, did_);
   train_.read (para_.dataTrain_);
    test_.read (para_.dataTest_);
   train_.data_.sub_mean (mean_);
@@ -145,7 +156,9 @@ void NNetModel<XPU>::train_epoch (DataBuffer<float> &buffer)
         batch_.copy (buffer);
       else
         batch_.rand (buffer);
-      update ();
+      fprop (true);
+      bprop ();
+      update();
       batch_.next (buffer);
     }
 
