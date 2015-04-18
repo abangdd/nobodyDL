@@ -256,31 +256,29 @@ public:
 template <typename XPU>
 class NNetModel {
 public:
-  explicit NNetModel (const int did) : did_(did) { }
-  ~NNetModel()
-  { mem_free ();  }
-  void mem_free ();
+//~NNetModel()
+//{ mem_free ();  }
+  void mem_free (const int did);
   void init  ();
   void train ();
-  void save_model ();
-  void load_model ();
-  void show_model ();
+  void save_model (const int did);
+  void load_model (const int did);
+  void show_model (const int did);
 private:
-  void train_epoch (DataBuffer<float> &buffer);
-  void  eval_epoch (DataBuffer<float> &buffer);
-  void fprop (const bool is_train);
-  void bprop ();
-  void update();
+  void train_epoch (DataBuffer<float> &buffer, const int did);
+  void  eval_epoch (DataBuffer<float> &buffer, const int did);
+  void fprop (const int did, const bool is_train);
+  void bprop (const int did);
+  void update(const int did);
 public:
   ParaNNet para_;
-  int did_;
-  vector<Tensor<XPU, float> > nodes_;
-  vector<LayerBase<XPU>*> layers_;
-  vector<OptimBase<XPU, float>*> optims_;
-  DataBatch<XPU, float> batch_;
-  DataBuffer<float> train_;
-  DataBuffer<float>  test_;
-  Tensor<CPU, float> mean_;
+  vector<LayerBase<XPU>*>        layers_[CUDA_NUM_DEVICES];
+  vector<OptimBase<XPU, float>*> optims_[CUDA_NUM_DEVICES];
+  vector<Tensor<XPU, float> > nodes_[CUDA_NUM_DEVICES];
+  DataBatch<XPU, float>       batch_[CUDA_NUM_DEVICES];
+  DataBuffer<float> train_[CUDA_NUM_DEVICES];
+  DataBuffer<float>  test_[CUDA_NUM_DEVICES];
+  Tensor<CPU, float> mean_[CUDA_NUM_DEVICES];
 };
 
 #endif
