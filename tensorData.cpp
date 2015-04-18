@@ -82,20 +82,21 @@ void DataBuffer<DT>::reset ()
 template void DataBuffer<float>::reset ();
 
 template <typename DT>
-void DataBuffer<DT>::create (const TensorFormat &tf)
+void DataBuffer<DT>::create (const TensorFormat &tf, const int did)
 { Shape dshape (tf.rows, tf.cols, tf.chls, tf.nums*tf.numBatch);
-  Shape lshape (      1, tf.numClass,   1, tf.nums*tf.numBatch); 
-   data_.create (dshape);
-   pred_.create (lshape);
-  label_.create (lshape);
+  Shape lshape (      1, tf.numClass,   1, tf.nums*tf.numBatch);
+  did_ = did;
+   data_.create (dshape, did_);
+   pred_.create (lshape, did_);
+  label_.create (lshape, did_);
 }
-template void DataBuffer<float>::create (const TensorFormat &tf);
+template void DataBuffer<float>::create (const TensorFormat &tf, const int did);
 
 template <typename DT>
 void DataBuffer<DT>::read_tensor (const ParaFileData &pd)
-{  data_.clear ();   data_.load (pd. data);
-  label_.clear ();  label_.load (pd.label);
-  pred_.create (label_.shape);
+{  data_.clear ();   data_.load (pd. data, did_);
+  label_.clear ();  label_.load (pd.label, did_);
+  pred_.create (label_.shape, did_);
 }
 template void DataBuffer<float>::read_tensor (const ParaFileData &pd);
 
