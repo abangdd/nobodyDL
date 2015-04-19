@@ -11,6 +11,7 @@
     tensor.h  张量头文件
     tensorData.cpp  张量数据处理
     tensorReduce.cpp  张量归约（kernal launch部分）
+    tensorVML.cpp   张量向量计算
     xpu.h   设备头文件
     
     imagenet112_conv.cfg  imagenet数据集（128*128像素）训练的网络结构，分 8层和10层两种
