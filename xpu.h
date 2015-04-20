@@ -110,6 +110,7 @@ enum cudaMemcpyKind get_memcpy_type (enum memcpy_t kind);
 void cuda_malloc (void **ptr, const size_t len);
 void cuda_memcpy       (void *dst, const void *src, const size_t size, enum memcpy_t kind);
 void cuda_memcpy_async (void *dst, const void *src, const size_t size, enum memcpy_t kind, cudaStream_t stream);
+void cuda_memcpy_peer  (void *dst, const void *src, const size_t size, const int dst_id, const int src_id);
 
 const char *cuda_get_status (const cudaError_t    &status);
 const char *cuda_get_status (const cublasStatus_t &status);
