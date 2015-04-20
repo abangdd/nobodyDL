@@ -99,6 +99,7 @@ public:
 public:
   void create (const Shape &s, const int did = 0);
   void clear();
+  void peer (const Tensor<GPU, DT> &in);
   void copy (const Tensor<GPU, DT> &in);
   void copy (const Tensor<CPU, DT> &in);
   Tensor<XPU, DT> segment (const int begin, const int end) const;
