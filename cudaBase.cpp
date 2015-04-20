@@ -84,11 +84,12 @@ void cuda_malloc (void **ptr, const size_t len)
 void cuda_memcpy       (void *dst, const void *src, const size_t size, enum memcpy_t kind)
 { cuda_check (cudaMemcpy      ((void*)dst, (const void*)src, size, get_memcpy_type(kind)));
 }
-
 void cuda_memcpy_async (void *dst, const void *src, const size_t size, enum memcpy_t kind, cudaStream_t stream)
 { cuda_check (cudaMemcpyAsync ((void*)dst, (const void*)src, size, get_memcpy_type(kind), stream));
 }
-
+void cuda_memcpy_peer  (void *dst, const void *src, const size_t size, const int dst_id, const int src_id)
+{ cuda_check (cudaMemcpyPeer  ((void*)dst, dst_id, (const void*)src, src_id, size));
+}
 
 
 void *GPU::operator new(size_t len)
