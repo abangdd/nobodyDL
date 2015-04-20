@@ -64,18 +64,18 @@ public:
 template <typename XPU>
 class LayerBase {
 public:
-  LayerBase (ParaLayer &pl, const int did) : pl_(pl), did_(did) { };
-  virtual ~LayerBase () { };
+  LayerBase (ParaLayer &pl, const int did) : pl_(pl), did_(did) { }
+  virtual ~LayerBase () { }
   // is_train the propagation is training or dropout
   virtual void fprop (const bool is_train) = 0;
   virtual void bprop (const bool is_prop_grad) = 0;
 public:
-  virtual void init_layer () { };
-  virtual void init_model () { };
-  virtual void save_model (const string file) { };
-  virtual void load_model (const string file) { };
-  virtual void show_model () { };
-  virtual void set_optimization (ParaOptim &paraWmat, ParaOptim &paraBias, vector<OptimBase<XPU, float>*> &optims) { };
+  virtual void init_layer () { }
+  virtual void init_model () { }
+  virtual void save_model (const string file) { }
+  virtual void load_model (const string file) { }
+  virtual void show_model () { }
+  virtual void set_optimization (ParaOptim &paraWmat, ParaOptim &paraBias, vector<OptimBase<XPU, float>*> &optims) { }
   ParaLayer pl_;
   int did_;
 };
@@ -251,6 +251,7 @@ public:
   int num_optims;  // wmat和bias合计算一个
   int num_rounds;
   int num_evals;
+  int sdid, edid;
 };
 
 template <typename XPU>
