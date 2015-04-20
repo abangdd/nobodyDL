@@ -19,14 +19,12 @@ int main (int argc, char** argv)
   { dnnctx[i] = new XPUCtx (i);
     dnnctx[i]->reset ();
   }
-
-  if (FLAGS_gpu >= 0)
-    cuda_set_device (FLAGS_gpu);
+  cuda_set_p2p ();
 //omp_set_num_threads (4);
 //mkl_set_num_threads (4);
 
   libconfig::Config cfg;  cfg.readFile (FLAGS_config.c_str());
-  NNetModel<XPU> model (FLAGS_gpu);
+  NNetModel<XPU> model;
   model.para_.config (cfg);
   model.init ();
   model.train ();
