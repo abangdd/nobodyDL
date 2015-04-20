@@ -15,13 +15,13 @@ void NNetModel<XPU>::init ()
     nodes_[did][0].create                 (para_.shape_src, did);  // TODO
     nodes_[did][para_.num_nodes-1].create (para_.shape_dst, did);  // TODO
   
-    layers_[did].clear();
+    layers_[did].resize (para_.num_layers);
     for (int i = 0; i < para_.num_layers; ++i)
     { ParaLayer pl = para_.paraLayer_[i];
       LOG (INFO) << "\tLayer initializing\t" << para_.paraLayer_[i].get_layer_type();
-      layers_[did].push_back (create_layer (pl, did, nodes_[did][pl.idxs], nodes_[did][pl.idxd]));
+      layers_[did][i] = create_layer (pl, did, nodes_[did][pl.idxs], nodes_[did][pl.idxd]);
     }
-  
+
     for (int i = 0; i < para_.num_nodes; ++i)
       nodes_[did][i].shape.print ();
   
