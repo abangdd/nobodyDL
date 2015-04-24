@@ -10,8 +10,6 @@
     optimVSGD.cpp   优化算法SGD
     sparse.h  稀疏矩阵头文件
     tensor.h  张量头文件
-    tensorData.cpp  张量数据处理
-    tensorReduce.cpp  张量归约（kernal launch部分）
     tensorVML.cpp   张量向量计算
     xpu.h   设备头文件
     
