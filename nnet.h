@@ -9,6 +9,7 @@
 #ifdef __CUDACC__
   #define USE_CUDNN true
 #endif
+  #define NNET_NUM_DEVICES 2
 
 using std::max;
 using std::min;
@@ -271,15 +272,17 @@ private:
   void fprop (const int did, const bool is_train);
   void bprop (const int did);
   void update(const int did);
+  void reduce_gmat (const int did);
 public:
   ParaNNet para_;
-  vector<LayerBase<XPU>*>        layers_[CUDA_NUM_DEVICES];
-  vector<OptimBase<XPU, float>*> optims_[CUDA_NUM_DEVICES];
-  vector<Tensor<XPU, float> > nodes_[CUDA_NUM_DEVICES];
-  DataBatch<XPU, float>       batch_[CUDA_NUM_DEVICES];
-  DataBuffer<float> train_[CUDA_NUM_DEVICES];
-  DataBuffer<float>  test_[CUDA_NUM_DEVICES];
-  Tensor<CPU, float> mean_[CUDA_NUM_DEVICES];
+  vector<LayerBase<XPU>*>        layers_[NNET_NUM_DEVICES];
+  vector<OptimBase<XPU, float>*> optims_[NNET_NUM_DEVICES];
+  vector<Tensor<XPU, float>*> coeff_[NNET_NUM_DEVICES];
+  vector<Tensor<XPU, float> > nodes_[NNET_NUM_DEVICES];
+  DataBatch<XPU, float>       batch_[NNET_NUM_DEVICES];
+  DataBuffer<float> train_[NNET_NUM_DEVICES];
+  DataBuffer<float>  test_[NNET_NUM_DEVICES];
+  Tensor<CPU, float> mean_[NNET_NUM_DEVICES];
 };
 
 #endif
