@@ -7,7 +7,7 @@
 
 template <typename XPU>
 void NNetModel<XPU>::init ()
-{ for (int did = 0; did < CUDA_NUM_DEVICES; ++did)
+{ for (int did = 0; did < NNET_NUM_DEVICES; ++did)
   { cuda_set_device (did);
     mem_free (did);
   
@@ -84,7 +84,34 @@ void NNetModel<XPU>::update (const int did)
 { cuda_set_device (did);
   for (size_t i = 0; i < optims_[did].size(); ++i)
     if (!optims_[did][i]->para_.isFixed)
-      optims_[did][i]->update ();
+    { if (did == 0)
+      { optims_[did][i]->update ();
+        optims_[did][i]->accept_record ();
+      } else
+      { optims_[did][i]->accept_wait (*optims_[0][i]);
+        optims_[did][i]->accept_wmat (*optims_[0][i]);
+      }
+    }
+}
+
+template <typename XPU>
+void NNetModel<XPU>::reduce_gmat (const int did)
+{ cuda_set_device (did);
+  for (size_t i = 0; i < optims_[did].size(); ++i)
+  { for (int r = NNET_NUM_DEVICES / 2; r > 0; r /= 2)
+    { const int k1  = NNET_NUM_DEVICES / r;
+      const int k2  = k1 * 2;
+      const int pid = did + k1 / 2;
+      if (k1 > 2 && (did % k2 == k1 || did % k2 == 0 ))
+        optims_[did][i]->reduce_wait (*optims_[pid][i]);
+      if (k1 > 1 && (did % k2 == k1 || did % k2 == 0 ))
+        optims_[did][i]->reduce_gmat (*optims_[pid][i]);
+      if (k1 > 1 && (did % k2 == k1))
+        optims_[did][i]->reduce_record ();
+    }
+    if (did == 0)
+      optims_[did][i]->reduce_scal (1.f/NNET_NUM_DEVICES);
+  }
 }
 
 
@@ -121,7 +148,7 @@ template void NNetModel<GPU>::show_model (const int did);
 
 template <typename XPU>
 void NNetModel<XPU>::train ()
-{ for (int did = 0; did < CUDA_NUM_DEVICES; ++did)
+{ for (int did = 0; did < NNET_NUM_DEVICES; ++did)
   { cuda_set_device (did);
 
     train_[did].create (para_.tFormat_, did);
@@ -135,9 +162,9 @@ void NNetModel<XPU>::train ()
      test_[did].page_lock ();
 #endif
   }
-  for (int did = 0; did < CUDA_NUM_DEVICES; ++did)
-  { cuda_set_device (did);
-    for (int r = 0; r < para_.num_rounds; ++r)
+#pragma omp parallel for
+  for (int did = 0; did < NNET_NUM_DEVICES; ++did)
+  { for (int r = 0; r < para_.num_rounds; ++r)
     { for (size_t i = 0; i < optims_[did].size(); ++i)
         optims_[did][i]->para_.set_lrate (r, para_.num_rounds);
       train_epoch (train_[did], did);
@@ -151,7 +178,7 @@ template <typename XPU>
 void NNetModel<XPU>::train_epoch (DataBuffer<float> &buffer, const int did)
 { const int mini_batch = batch_[did].data_.nums();
   const int numBuffers = buffer.lnums_ / buffer.data_.nums();
-  const int numBatches = buffer.data_.nums() / mini_batch;
+  const int numBatches = buffer.data_.nums() / mini_batch / NNET_NUM_DEVICES;  // TODO
   const int numEvals = para_.num_evals;
   std::random_shuffle (buffer.image_.img_list.begin(), buffer.image_.img_list.end());
 
@@ -172,13 +199,15 @@ void NNetModel<XPU>::train_epoch (DataBuffer<float> &buffer, const int did)
         batch_[did].rand (buffer);
       fprop (did, true);
       bprop (did);
-      update(did);
+
+      reduce_gmat (did);
+      update (did);
       batch_[did].next (buffer);
     }
 
     if ((i+1) % (numBuffers/numEvals) == 0)
     { eval_epoch ( test_[did], did);
-      save_model (did);
+    //save_model (did);
     }
   }
 }
@@ -208,7 +237,7 @@ void NNetModel<XPU>::eval_epoch (DataBuffer<float> &buffer, const int did)
     }
     buffer.evaluate (test_err);
   }
-  LOG (INFO) << "\ttest_err\t" << test_err / numBuffers;
+  LOG (INFO) << "\tGPU  " << did << "\ttest_err\t" << test_err / numBuffers;
 }
 
 #endif
