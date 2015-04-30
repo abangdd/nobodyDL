@@ -100,6 +100,7 @@ public:
   void create (const Shape &s, const int did = 0);
   void clear();
   void peer (const Tensor<GPU, DT> &in);
+  void peer (const Tensor<CPU, DT> &in);
   void copy (const Tensor<GPU, DT> &in);
   void copy (const Tensor<CPU, DT> &in);
   Tensor<XPU, DT> segment (const int begin, const int end) const;
@@ -169,10 +170,10 @@ public:
   void reduce_var  (const Tensor<XPU, DT> &in, const int keepdim);
   void reduce_mean (const Tensor<XPU, DT> &in, const int keepdim);
   void reduce_sum_product (const Tensor<XPU, DT> &ain, const Tensor<XPU, DT> &bin, const int keepdim);
-  void broadcast_minus (const Tensor<XPU, DT> &bin, const int keepdim);
-  void broadcast_mul   (const Tensor<XPU, DT> &bin, const int keepdim);
-  void broadcast_div   (const Tensor<XPU, DT> &bin, const int keepdim);
-  void broadcast_minus_product (const Tensor<XPU, DT> &ain, const Tensor<XPU, DT> &bin, const int keepdim);
+  void bdcast_minus (const Tensor<XPU, DT> &bin, const int keepdim);
+  void bdcast_mul   (const Tensor<XPU, DT> &bin, const int keepdim);
+  void bdcast_div   (const Tensor<XPU, DT> &bin, const int keepdim);
+  void bdcast_minus_product (const Tensor<XPU, DT> &ain, const Tensor<XPU, DT> &bin, const int keepdim);
   void get_mean (Tensor<XPU, DT> &mean) const;
   void sub_mean (const Tensor<XPU, DT> &mean);
   void sub_image (const Tensor<XPU, DT> &src);
