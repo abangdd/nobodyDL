@@ -108,11 +108,11 @@ void ParaNNet::config (const libconfig::Config &cfg)
     po.isFixed	= isFixed[i];
     po.lr_alpha	= cfg.lookup ("optim.lr_alpha");
 
-    po.lr_base	= epsW[i];
+    po.lr_base	= epsW[i];  po.lr_base *= NNET_NUM_DEVICES;
     po.wd	= wd[i];
     paraWmat_.push_back (po);
 
-    po.lr_base	= epsB[i];
+    po.lr_base	= epsB[i];  po.lr_base *= NNET_NUM_DEVICES;
     po.wd	= 0.f;
     paraBias_.push_back (po);
   }
@@ -126,6 +126,7 @@ void ParaNNet::config (const libconfig::Config &cfg)
   shape_dst = Shape (tFormat_.numClass, 1, 1, tFormat_.nums);
 
   num_evals  = cfg.lookup ("model.num_evals");
+  num_evals /= NNET_NUM_DEVICES;
   num_rounds = cfg.lookup ("model.num_rounds");
   num_layers = paraLayer_.size();
   num_optims = paraWmat_ .size();
