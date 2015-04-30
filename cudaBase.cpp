@@ -31,6 +31,8 @@ void XPUCtx::reset ()
   cuda_check (curandSetPseudoRandomGeneratorSeed (curand_, rand()));
 }
 
+
+
 void cuda_set_p2p ()
 { for (int did = 0; did < CUDA_NUM_DEVICES; ++did)
   { cuda_set_device (did);
