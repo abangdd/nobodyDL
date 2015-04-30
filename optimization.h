@@ -30,12 +30,18 @@ public:
 template <typename XPU, typename DT>
 class OptimBase {
 public:
-  OptimBase (ParaOptim &po, const int did, Tensor<XPU, DT> &weight, Tensor<XPU, DT> &wgrad) :
-    para_(po), did_(did), wmat_(weight), gmat_(wgrad)  { }
-  virtual ~OptimBase () { };
+  explicit OptimBase (ParaOptim &po, const int did, Tensor<XPU, DT> &weight, Tensor<XPU, DT> &wgrad);
+  virtual ~OptimBase ();
   virtual void update () = 0;
   virtual void get_direction (const int k) = 0;
   virtual void optimize (SparseBuffer<XPU, DT> &buffer) = 0;
+  virtual void reduce_record ();
+  virtual void accept_record ();
+  virtual void reduce_wait (OptimBase<XPU, DT> &in);
+  virtual void accept_wait (OptimBase<XPU, DT> &in);
+  virtual void reduce_gmat (OptimBase<XPU, DT> &in);
+  virtual void accept_wmat (OptimBase<XPU, DT> &in);
+  virtual void reduce_scal (const DT alpha);
   void set_cache(SparseTensor<XPU, DT> &data, Tensor<XPU, DT> &label);
   void get_pred (SparseTensor<XPU, DT> &data, Tensor<XPU, DT> &pred);
   void get_grad (SparseTensor<XPU, DT> &data, Tensor<XPU, DT> &label);
@@ -56,6 +62,10 @@ private:
   DT alpha_0, alpha_j, alpha_low, alpha_high;
   DT f_phi_0, f_phi_j, f_phi_low, f_phi_high, f_phi_alpha;
   DT d_phi_0, d_phi_j, d_phi_low, d_phi_high, d_phi_alpha;  // directional derivative
+#ifdef __CUDACC__
+  cudaEvent_t  reduce_ = nullptr;
+  cudaEvent_t  accept_ = nullptr;
+#endif
 };
 
 typedef OptimBase<GPU, float>  OptimBaseGPUf;
