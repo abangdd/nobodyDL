@@ -84,8 +84,7 @@ public:
   void reset ();
   int  did_;
 #ifdef __CUDACC__
-  cudaStream_t stream_ = nullptr;
-  cudaEvent_t   event_ = nullptr;
+  cudaStream_t      stream_ = nullptr;
   cublasHandle_t    cublas_ = nullptr;
   curandGenerator_t curand_ = nullptr;
   cudnnHandle_t     cudnn_  = nullptr;
