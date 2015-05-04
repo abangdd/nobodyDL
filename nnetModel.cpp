@@ -2,7 +2,6 @@
 #define NNET_MODEL_
 
 #include <algorithm>
-#include <thread>
 #include "../include/nnet.h"
 
 template <typename XPU>
@@ -74,22 +73,28 @@ void NNetModel<XPU>::fprop (const int did, const bool is_train)
 template <typename XPU>
 void NNetModel<XPU>::bprop (const int did)
 { cuda_set_device (did);
-  for (size_t i = layers_[did].size(); i > 0; --i)
-    if (!layers_[did][i-1]->pl_.isFixed)
-      layers_[did][i-1]->bprop (i != 1);
+  for (int i = layers_[did].size()-1; i >= 0; --i)
+    if (!layers_[did][i]->pl_.isFixed)
+      layers_[did][i]->bprop (i != 0);
 }
 
 template <typename XPU>
-void NNetModel<XPU>::update (const int did)
+void NNetModel<XPU>::update_wmat (const int did)
 { cuda_set_device (did);
-  for (size_t i = 0; i < optims_[did].size(); ++i)
+  for (int i = optims_[did].size()-1; i >= 0; --i)
     if (!optims_[did][i]->para_.isFixed)
     { if (did == 0)
       { optims_[did][i]->update ();
-        optims_[did][i]->accept_record ();
+        optims_[did][i]->accept_notify ();
       } else
-      { optims_[did][i]->accept_wait (*optims_[0][i]);
-        optims_[did][i]->accept_wmat (*optims_[0][i]);
+      for (int r = 1; r < NNET_NUM_DEVICES; r *= 2)
+      { const int k1  = NNET_NUM_DEVICES / r;
+        const int pid = did - k1 / 2;
+        if (did % k1 == k1/2)
+        { optims_[did][i]->accept_wait (*optims_[pid][i]);
+          optims_[did][i]->accept_wmat (*optims_[pid][i]);
+          optims_[did][i]->accept_notify ();
+        }
       }
     }
 }
@@ -97,21 +102,21 @@ void NNetModel<XPU>::update (const int did)
 template <typename XPU>
 void NNetModel<XPU>::reduce_gmat (const int did)
 { cuda_set_device (did);
-  for (size_t i = 0; i < optims_[did].size(); ++i)
-  { for (int r = NNET_NUM_DEVICES / 2; r > 0; r /= 2)
-    { const int k1  = NNET_NUM_DEVICES / r;
-      const int k2  = k1 * 2;
-      const int pid = did + k1 / 2;
-      if (k1 > 2 && (did % k2 == k1 || did % k2 == 0 ))
-        optims_[did][i]->reduce_wait (*optims_[pid][i]);
-      if (k1 > 1 && (did % k2 == k1 || did % k2 == 0 ))
-        optims_[did][i]->reduce_gmat (*optims_[pid][i]);
-      if (k1 > 1 && (did % k2 == k1))
-        optims_[did][i]->reduce_record ();
+  for (int i = optims_[did].size()-1; i >= 0; --i)
+    if (!optims_[did][i]->para_.isFixed)
+    { for (int r = NNET_NUM_DEVICES / 2; r > 0; r /= 2)
+      { const int k1  = NNET_NUM_DEVICES / r;
+        const int pid = did + k1 / 2;
+        if (did % k1 != 0)
+        { optims_[did][i]->reduce_notify ();
+        } else
+        { optims_[did][i]->reduce_wait (*optims_[pid][i]);
+          optims_[did][i]->reduce_gmat (*optims_[pid][i]);
+        }
+      }
+      if (did == 0)
+        optims_[did][i]->reduce_scal (1.f/NNET_NUM_DEVICES);
     }
-    if (did == 0)
-      optims_[did][i]->reduce_scal (1.f/NNET_NUM_DEVICES);
-  }
 }
 
 
@@ -119,6 +124,8 @@ void NNetModel<XPU>::reduce_gmat (const int did)
 template <typename XPU>
 void NNetModel<XPU>::save_model (const int did)
 { cuda_set_device (did);
+  if (did != 0)
+    return;
   for (int i = 0; i < para_.num_layers; ++i)
   { char layerid[16];  sprintf (layerid, "%02d", i);
     layers_[did][i]->save_model (para_.model_.path+"_layer_"+layerid);
@@ -162,14 +169,13 @@ void NNetModel<XPU>::train ()
      test_[did].page_lock ();
 #endif
   }
+  for (int r = 0; r < para_.num_rounds; ++r)
 #pragma omp parallel for
-  for (int did = 0; did < NNET_NUM_DEVICES; ++did)
-  { for (int r = 0; r < para_.num_rounds; ++r)
+    for (int did = 0; did < NNET_NUM_DEVICES; ++did)
     { for (size_t i = 0; i < optims_[did].size(); ++i)
         optims_[did][i]->para_.set_lrate (r, para_.num_rounds);
       train_epoch (train_[did], did);
     }
-  }
 }
 template void NNetModel<GPU>::train ();
 template void NNetModel<CPU>::train ();
@@ -201,13 +207,13 @@ void NNetModel<XPU>::train_epoch (DataBuffer<float> &buffer, const int did)
       bprop (did);
 
       reduce_gmat (did);
-      update (did);
+      update_wmat (did);
       batch_[did].next (buffer);
     }
 
     if ((i+1) % (numBuffers/numEvals) == 0)
     { eval_epoch ( test_[did], did);
-    //save_model (did);
+      save_model (did);
     }
   }
 }
