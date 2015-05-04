@@ -75,6 +75,7 @@
 
 void cuda_set_p2p ();
 void cuda_set_device (const int did);
+void cuda_stream_sync(const int did);
 int  cuda_get_blocks (const int N);
 
 class XPUCtx {
@@ -109,7 +110,8 @@ enum cudaMemcpyKind get_memcpy_type (enum memcpy_t kind);
 void cuda_malloc (void **ptr, const size_t len);
 void cuda_memcpy       (void *dst, const void *src, const size_t size, enum memcpy_t kind);
 void cuda_memcpy_async (void *dst, const void *src, const size_t size, enum memcpy_t kind, cudaStream_t stream);
-void cuda_memcpy_peer  (void *dst, const void *src, const size_t size, const int dst_id, const int src_id);
+void cuda_memcpy_peer       (void *dst, const void *src, const size_t size, const int dst_id, const int src_id);
+void cuda_memcpy_peer_async (void *dst, const void *src, const size_t size, const int dst_id, const int src_id);
 
 const char *cuda_get_status (const cudaError_t    &status);
 const char *cuda_get_status (const cublasStatus_t &status);
