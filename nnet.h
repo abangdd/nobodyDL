@@ -65,7 +65,7 @@ public:
 template <typename XPU>
 class LayerBase {
 public:
-  LayerBase (ParaLayer &pl, const int did) : pl_(pl), did_(did) { }
+  explicit LayerBase (ParaLayer &pl, const int did) : pl_(pl), did_(did) { }
   virtual ~LayerBase () { }
   // is_train the propagation is training or dropout
   virtual void fprop (const bool is_train) = 0;
@@ -82,7 +82,7 @@ public:
 };
 
 #define LAYER_CONSTRUCTOR(layername) \
-  layername (ParaLayer &pl, const int did, Tensor<XPU, float> &src, Tensor<XPU, float> &dst) \
+  explicit layername (ParaLayer &pl, const int did, Tensor<XPU, float> &src, Tensor<XPU, float> &dst) \
   : LayerBase<XPU> (pl, did), pl_(pl), did_(did), src_(src), dst_(dst), rand_(did), alpha(1.), beta(0.) \
   { init_layer ();  }
 
@@ -258,8 +258,8 @@ public:
 template <typename XPU>
 class NNetModel {
 public:
-//~NNetModel()
-//{ mem_free ();  }
+  ~NNetModel ()
+  { for (int did = 0; did < NNET_NUM_DEVICES; ++did)  mem_free (did);  }
   void mem_free (const int did);
   void init  ();
   void train ();
@@ -271,8 +271,8 @@ private:
   void  eval_epoch (DataBuffer<float> &buffer, const int did);
   void fprop (const int did, const bool is_train);
   void bprop (const int did);
-  void update(const int did);
   void reduce_gmat (const int did);
+  void update_wmat (const int did);
 public:
   ParaNNet para_;
   vector<LayerBase<XPU>*>        layers_[NNET_NUM_DEVICES];
