@@ -18,7 +18,11 @@ string ParaLayer::get_layer_type ()
 }
 
 void ParaNNet::config (const libconfig::Config &cfg)
-{ using namespace libconfig;
+{ tFormat_  = TensorFormat (cfg);
+  dataTrain_= ParaFileData (cfg, "traindata");
+  dataTest_ = ParaFileData (cfg,  "testdata");
+
+  using namespace libconfig;
   Setting
   &layer_type	= cfg.lookup ("layer.type"),
   &ksize	= cfg.lookup ("layer.ksize"),
@@ -107,6 +111,7 @@ void ParaNNet::config (const libconfig::Config &cfg)
     po.algo	=                    cfg.lookup ("optim.algo");
     po.isFixed	= isFixed[i];
     po.lr_alpha	= cfg.lookup ("optim.lr_alpha");
+    po.lr_last *= NNET_NUM_DEVICES * tFormat_.nums / 128.f;
 
     po.lr_base	= epsW[i];  po.lr_base *= NNET_NUM_DEVICES;
     po.wd	= wd[i];
@@ -117,9 +122,6 @@ void ParaNNet::config (const libconfig::Config &cfg)
     paraBias_.push_back (po);
   }
 
-  tFormat_  = TensorFormat (cfg);
-  dataTrain_= ParaFileData (cfg, "traindata");
-  dataTest_ = ParaFileData (cfg,  "testdata");
   model_.set_para (cfg);
 
   shape_src = Shape (tFormat_.rows, tFormat_.cols, tFormat_.chls, tFormat_.nums);
