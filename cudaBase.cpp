@@ -55,6 +55,10 @@ void cuda_set_device (const int did)
   cuda_check (cudaSetDevice (did));
 }
 
+void cuda_stream_sync(const int did)
+{ cuda_check (cudaStreamSynchronize (dnnctx[did]->stream_));
+}
+
 int cuda_get_blocks (const int N)
 { return (N + CUDA_NUM_THREADS - 1) / CUDA_NUM_THREADS;
 }
@@ -77,7 +81,7 @@ enum cudaMemcpyKind get_memcpy_type (enum memcpy_t kind)
 void cuda_malloc (void **ptr, const size_t len)
 {
 #if CUDA_MANAGED
-  cuda_check (cudaMallocManaged (ptr, len));
+  cuda_check (cudaMallocManaged (ptr, len, cudaMemAttachGlobal));
 #else
   cuda_check (cudaMalloc (ptr, len));
 #endif
@@ -89,10 +93,12 @@ void cuda_memcpy       (void *dst, const void *src, const size_t size, enum memc
 void cuda_memcpy_async (void *dst, const void *src, const size_t size, enum memcpy_t kind, cudaStream_t stream)
 { cuda_check (cudaMemcpyAsync ((void*)dst, (const void*)src, size, get_memcpy_type(kind), stream));
 }
-void cuda_memcpy_peer  (void *dst, const void *src, const size_t size, const int dst_id, const int src_id)
-{ cuda_check (cudaMemcpyPeer  ((void*)dst, dst_id, (const void*)src, src_id, size));
+void cuda_memcpy_peer       (void *dst, const void *src, const size_t size, const int dst_id, const int src_id)
+{ cuda_check (cudaMemcpyPeer      ((void*)dst, dst_id, (const void*)src, src_id, size));
 }
-
+void cuda_memcpy_peer_async (void *dst, const void *src, const size_t size, const int dst_id, const int src_id)
+{ cuda_check (cudaMemcpyPeerAsync ((void*)dst, dst_id, (const void*)src, src_id, size, dnnctx[dst_id]->stream_));
+}
 
 void *GPU::operator new(size_t len)
 { void *ptr = NULL;
