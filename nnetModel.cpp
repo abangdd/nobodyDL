@@ -183,16 +183,17 @@ template void NNetModel<CPU>::train ();
 template <typename XPU>
 void NNetModel<XPU>::train_epoch (DataBuffer<float> &buffer, const int did)
 { const int mini_batch = batch_[did].data_.nums();
-  const int numBuffers = buffer.lnums_ / buffer.data_.nums();
-  const int numBatches = buffer.data_.nums() / mini_batch / NNET_NUM_DEVICES;  // TODO
+  const int numBuffers = buffer.lnums_ / buffer.data_.nums() / NNET_NUM_DEVICES;  // TODO
+  const int numBatches = buffer.data_.nums() / mini_batch;
   const int numEvals = para_.num_evals;
+  std::thread reader;
   std::random_shuffle (buffer.image_.img_list.begin(), buffer.image_.img_list.end());
 
   for (int i = 0; i < numBuffers; ++i)
   { para_.tFormat_.isTrain = true;
     if (para_.dataTrain_.type == "image")
     { buffer.reset ();
-      std::thread (&DataBuffer<float>::read_image, &buffer, std::ref(para_.tFormat_), std::ref(mean_[did])).detach ();
+      reader = std::thread (&DataBuffer<float>::read_image, &buffer, std::ref(para_.tFormat_), std::ref(mean_[did]));
     }
 
     batch_[did].reset ();
@@ -210,6 +211,7 @@ void NNetModel<XPU>::train_epoch (DataBuffer<float> &buffer, const int did)
       update_wmat (did);
       batch_[did].next (buffer);
     }
+    reader.join ();
 
     if ((i+1) % (numBuffers/numEvals) == 0)
     { eval_epoch ( test_[did], did);
@@ -223,13 +225,14 @@ void NNetModel<XPU>::eval_epoch (DataBuffer<float> &buffer, const int did)
 { const int mini_batch = batch_[did].data_.nums();
   const int numBuffers = buffer.lnums_ / buffer.data_.nums();
   const int numBatches = buffer.data_.nums() / mini_batch;
+  std::thread reader;
 
   float test_err = 0.f;
   for (int i = 0; i < numBuffers; ++i)
   { para_.tFormat_.isTrain = false;
     if (para_.dataTest_.type == "image")
     { buffer.reset ();
-      std::thread (&DataBuffer<float>::read_image, &buffer, std::ref(para_.tFormat_), std::ref(mean_[did])).detach ();
+      reader = std::thread (&DataBuffer<float>::read_image, &buffer, std::ref(para_.tFormat_), std::ref(mean_[did]));
     }
 
     batch_[did].reset ();
@@ -241,6 +244,7 @@ void NNetModel<XPU>::eval_epoch (DataBuffer<float> &buffer, const int did)
       batch_[did].send (buffer);
       batch_[did].next (buffer);
     }
+    reader.join ();
     buffer.evaluate (test_err);
   }
   LOG (INFO) << "\tGPU  " << did << "\ttest_err\t" << test_err / numBuffers;
