@@ -164,6 +164,7 @@ void NNetModel<XPU>::train ()
      test_[did].read (para_.dataTest_);
     train_[did].data_.sub_mean (mean_[did]);
      test_[did].data_.sub_mean (mean_[did]);
+    train_[did].lnums_ /= NNET_NUM_DEVICES;  // TODO
 #ifdef __CUDACC__
     train_[did].page_lock ();
      test_[did].page_lock ();
@@ -183,7 +184,7 @@ template void NNetModel<CPU>::train ();
 template <typename XPU>
 void NNetModel<XPU>::train_epoch (DataBuffer<float> &buffer, const int did)
 { const int mini_batch = batch_[did].data_.nums();
-  const int numBuffers = buffer.lnums_ / buffer.data_.nums() / NNET_NUM_DEVICES;  // TODO
+  const int numBuffers = buffer.lnums_ / buffer.data_.nums();
   const int numBatches = buffer.data_.nums() / mini_batch;
   const int numEvals = para_.num_evals;
   std::thread reader;
