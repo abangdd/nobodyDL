@@ -249,7 +249,7 @@ public:
   Shape shape_src, shape_dst;
   int num_nodes;
   int num_layers;
-  int num_optims;  // wmat和bias合计算一个
+  int num_optims;
   int num_rounds;
   int num_evals;
   int sdid, edid;
