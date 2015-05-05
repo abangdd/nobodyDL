@@ -18,7 +18,7 @@ string ParaLayer::get_layer_type ()
 }
 
 void ParaNNet::config (const libconfig::Config &cfg)
-{ tFormat_  = TensorFormat (cfg);
+{ tFormat_  = TensorFormat (cfg);  tFormat_.numBatch /= NNET_NUM_DEVICES;
   dataTrain_= ParaFileData (cfg, "traindata");
   dataTest_ = ParaFileData (cfg,  "testdata");
 
@@ -131,7 +131,7 @@ void ParaNNet::config (const libconfig::Config &cfg)
   num_evals /= NNET_NUM_DEVICES;
   num_rounds = cfg.lookup ("model.num_rounds");
   num_layers = paraLayer_.size();
-  num_optims = paraWmat_ .size();
+  num_optims = paraWmat_ .size() + paraBias_ .size();
   num_nodes  = 0;
   for (int i = 0; i < num_layers; ++i)  // TODO
     num_nodes = std::max (paraLayer_[i].idxd + 1, num_nodes);
