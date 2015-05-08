@@ -13,6 +13,7 @@ XPUCtx::~XPUCtx()
   if (curand_)  cuda_check (curandDestroyGenerator (curand_));
   if (cudnn_ )  cuda_check (cudnnDestroy  (cudnn_));
   if (stream_)  cuda_check (cudaStreamDestroy (stream_));
+  if (accept_)  cuda_check (cudaEventDestroy  (accept_));
 }
 
 void XPUCtx::reset ()
@@ -20,6 +21,7 @@ void XPUCtx::reset ()
   cuda_check (cudaSetDevice (did_));
   cuda_check (cudaDeviceReset ());
 
+  cuda_check (cudaEventCreateWithFlags (&accept_, cudaEventDisableTiming));
   cuda_check (cudaStreamCreate (&stream_));
   cuda_check (cublasCreate (&cublas_));
   cuda_check (curandCreateGenerator (&curand_, CURAND_RNG_PSEUDO_DEFAULT));
@@ -44,6 +46,18 @@ void cuda_set_p2p ()
           cuda_check (cudaDeviceEnablePeerAccess (pid, 0));
       } else
         dnnctx[did]->cup2p_[pid] = 1;
+  }
+}
+
+void cuda_del_p2p ()
+{ for (int did = 0; did < CUDA_NUM_DEVICES; ++did)
+  { cuda_set_device (did);
+    for (int pid = 0; pid < CUDA_NUM_DEVICES; ++pid)
+      if (pid != did)
+      { cuda_check (cudaDeviceCanAccessPeer (&dnnctx[did]->cup2p_[pid], did, pid));
+        if (dnnctx[did]->cup2p_[pid])
+          cuda_check (cudaDeviceDisablePeerAccess (pid));
+      }
   }
 }
 
