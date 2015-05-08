@@ -93,13 +93,11 @@ public:
 template <typename XPU, typename DT>
 class Tensor : public XPU {
 public:
-  explicit Tensor () : shape(), dptr(NULL), did_(0), cherry(false) { }
+  explicit Tensor ();
   ~Tensor ();
 public:
   void create (const Shape &s, const int did = 0);
   void clear();
-  void peer (const Tensor<GPU, DT> &in);
-  void peer (const Tensor<CPU, DT> &in);
   void copy (const Tensor<GPU, DT> &in);
   void copy (const Tensor<CPU, DT> &in);
   Tensor<XPU, DT> segment (const int begin, const int end) const;
@@ -146,3 +144,96 @@ public:
   void blas_sdot (const Tensor<XPU, DT> &in, DT &val) const;
   void blas_nrm2 (DT &val) const;
   void blas_scal (DT alpha);
+public:
+  void sparse_axpy (const SparseTensor<XPU, DT> &in, DT alpha);
+public:
+  void blas_vadd (const Tensor<XPU, DT> &A, const Tensor<XPU, DT> &B);
+  void blas_vsub (const Tensor<XPU, DT> &A, const Tensor<XPU, DT> &B);
+  void blas_vmul (const Tensor<XPU, DT> &A, const Tensor<XPU, DT> &B);
+  void blas_vdiv (const Tensor<XPU, DT> &A, const Tensor<XPU, DT> &B);
+  void blas_vabs (const Tensor<XPU, DT> &in);
+  void blas_vexp (const Tensor<XPU, DT> &in);
+  void blas_vinv (const Tensor<XPU, DT> &in);
+  void blas_vsqr (const Tensor<XPU, DT> &in);
+  void blas_vsqrt(const Tensor<XPU, DT> &in);
+public:
+  DT reduce_sum () const;
+  DT reduce_max () const;
+  void reduce_sum  (const Tensor<XPU, DT> &in, const int keepdim);
+  void reduce_var  (const Tensor<XPU, DT> &in, const int keepdim);
+  void reduce_mean (const Tensor<XPU, DT> &in, const int keepdim);
+  void reduce_sum_product (const Tensor<XPU, DT> &ain, const Tensor<XPU, DT> &bin, const int keepdim);
+  void bdcast_minus (const Tensor<XPU, DT> &bin, const int keepdim);
+  void bdcast_mul   (const Tensor<XPU, DT> &bin, const int keepdim);
+  void bdcast_div   (const Tensor<XPU, DT> &bin, const int keepdim);
+  void bdcast_minus_product (const Tensor<XPU, DT> &ain, const Tensor<XPU, DT> &bin, const int keepdim);
+  void get_mean (Tensor<XPU, DT> &mean) const;
+  void sub_mean (const Tensor<XPU, DT> &mean);
+public:
+  int rows () const { return shape.rows;  }
+  int cols () const { return shape.cols;  }
+  int chls () const { return shape.chls;  }
+  int nums () const { return shape.nums;  }
+  int size () const { return shape.size;  }
+  size_t size_d () const { return shape.size * sizeof(DT);  }
+  void print (const int cnt) const;
+#ifdef __CUDACC__
+  void setTensor4dDescriptor (cudnnTensorDescriptor_t &desc);
+  void setFilter4dDescriptor (cudnnFilterDescriptor_t &desc);
+#endif
+public:
+  Shape shape;
+  DT *dptr;
+  int did_;
+  bool cherry;
+};
+
+typedef Tensor<GPU, float>  TensorGPUf;
+typedef Tensor<CPU, float>  TensorCPUf;
+typedef Tensor<GPU, double> TensorGPUd;
+typedef Tensor<CPU, double> TensorCPUd;
+
+
+
+template <typename DT>
+class DataBuffer {
+public:
+  explicit DataBuffer () : did_(0), curr_no_(0), lnums_(0) { }
+  void reset ();
+  void create (const TensorFormat &tf, const int did);
+  void page_lock ();
+  void page_unlk ();
+  void read_tensor (const ParaFileData &pd);
+  void read_image  (const TensorFormat &tf, const Tensor<CPU, DT> &mean = Tensor<CPU, DT>());
+  void read (const ParaFileData &pd);
+  void get_mean (const ParaFileData &pd, const TensorFormat &tf);
+  void evaluate (DT &err);
+public:
+  Tensor<CPU, DT>  inst_;
+  Tensor<CPU, DT>  data_;
+  Tensor<CPU, DT>  pred_;
+  Tensor<CPU, DT> label_;
+  DataImage       image_;
+  int did_;
+  int curr_no_;
+  int lnums_, cnums_;
+};
+
+template <typename XPU, typename DT>
+class DataBatch {
+public:
+  explicit DataBatch () : did_(0), curr_no_(0) { }
+  void reset ();
+  void copy (const DataBuffer<DT> &in);
+  void send (DataBuffer<DT> &in) const;
+  void next (const DataBuffer<DT> &in);
+  void rand (const DataBuffer<DT> &in);
+  Tensor<XPU, DT>  data_;
+  Tensor<XPU, DT>  pred_;
+  Tensor<XPU, DT> label_;
+  int did_;
+  int curr_no_;
+  int next_no_;
+};
+
+#endif
