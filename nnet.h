@@ -274,15 +274,15 @@ private:
   void reduce_gmat (const int did);
   void update_wmat (const int did);
 public:
-  ParaNNet para_;
-  vector<LayerBase<XPU>*>        layers_[NNET_NUM_DEVICES];
-  vector<OptimBase<XPU, float>*> optims_[NNET_NUM_DEVICES];
-  vector<Tensor<XPU, float>*> coeff_[NNET_NUM_DEVICES];
-  vector<Tensor<XPU, float> > nodes_[NNET_NUM_DEVICES];
-  DataBatch<XPU, float>       batch_[NNET_NUM_DEVICES];
-  DataBuffer<float> train_[NNET_NUM_DEVICES];
-  DataBuffer<float>  test_[NNET_NUM_DEVICES];
-  Tensor<CPU, float> mean_[NNET_NUM_DEVICES];
+  ParaNNet  para_;
+  DataImage dataIm_;
+  vector<vector<LayerBase<XPU>*>>        layers_;
+  vector<vector<OptimBase<XPU, float>*>> optims_;
+  vector<vector<Tensor<XPU, float>>> nodes_;
+  vector<DataBatch<XPU, float>>      batch_;
+  vector<DataBuffer<float>> train_;
+  vector<DataBuffer<float>>  test_;
+  Tensor<CPU, float> mean_;
 };
 
 #endif
