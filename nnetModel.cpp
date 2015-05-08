@@ -6,7 +6,13 @@
 
 template <typename XPU>
 void NNetModel<XPU>::init ()
-{ for (int did = 0; did < NNET_NUM_DEVICES; ++did)
+{ train_. resize (NNET_NUM_DEVICES);
+   test_. resize (NNET_NUM_DEVICES);
+  batch_. resize (NNET_NUM_DEVICES);
+  nodes_. resize (NNET_NUM_DEVICES);
+  layers_.resize (NNET_NUM_DEVICES);
+  optims_.resize (NNET_NUM_DEVICES);
+  for (int did = 0; did < NNET_NUM_DEVICES; ++did)
   { cuda_set_device (did);
     mem_free (did);
   
@@ -43,8 +49,8 @@ void NNetModel<XPU>::init ()
     { load_model (did);
     //show_model (did);
     }
-    mean_[did].load (para_.dataTrain_.mean, did);
   }
+  mean_.load (para_.dataTrain_.mean, 0);
 }
 template void NNetModel<GPU>::init ();
 template void NNetModel<CPU>::init ();
@@ -162,31 +168,39 @@ void NNetModel<XPU>::train ()
      test_[did].create (para_.tFormat_, did);
     train_[did].read (para_.dataTrain_);
      test_[did].read (para_.dataTest_);
-    train_[did].data_.sub_mean (mean_[did]);
-     test_[did].data_.sub_mean (mean_[did]);
-    train_[did].lnums_ /= NNET_NUM_DEVICES;  // TODO
+    train_[did].data_.sub_mean (mean_);
+     test_[did].data_.sub_mean (mean_);
 #ifdef __CUDACC__
     train_[did].page_lock ();
      test_[did].page_lock ();
 #endif
   }
+
+  dataIm_.init (para_.dataTrain_);
+  for (int did = 0; did < NNET_NUM_DEVICES; ++did)
+  { train_[did].image_.init (dataIm_, did, NNET_NUM_DEVICES);
+     test_[did].image_.init (para_.dataTest_);
+    train_[did].lnums_ = train_[did].image_.img_list.size();
+     test_[did].lnums_ =  test_[did].image_.img_list.size();
+  }
+
   for (int r = 0; r < para_.num_rounds; ++r)
-#pragma omp parallel for
-    for (int did = 0; did < NNET_NUM_DEVICES; ++did)
-    { for (size_t i = 0; i < optims_[did].size(); ++i)
-        optims_[did][i]->para_.set_lrate (r, para_.num_rounds);
-      train_epoch (train_[did], did);
-    }
+#pragma omp parallel num_threads (NNET_NUM_DEVICES)
+  { const int did = omp_get_thread_num ();
+    for (size_t i = 0; i < optims_[did].size(); ++i)
+      optims_[did][i]->para_.set_lrate (r, para_.num_rounds);
+    train_epoch (train_[did], did);
+  }
 }
 template void NNetModel<GPU>::train ();
 template void NNetModel<CPU>::train ();
 
 template <typename XPU>
 void NNetModel<XPU>::train_epoch (DataBuffer<float> &buffer, const int did)
-{ const int mini_batch = batch_[did].data_.nums();
+{ const int numEvals   = para_.num_evals;
+  const int mini_batch = para_.tFormat_.nums;
+  const int numBatches = para_.tFormat_.numBatch;
   const int numBuffers = buffer.lnums_ / buffer.data_.nums();
-  const int numBatches = buffer.data_.nums() / mini_batch;
-  const int numEvals = para_.num_evals;
   std::thread reader;
   std::random_shuffle (buffer.image_.img_list.begin(), buffer.image_.img_list.end());
 
@@ -194,7 +208,7 @@ void NNetModel<XPU>::train_epoch (DataBuffer<float> &buffer, const int did)
   { para_.tFormat_.isTrain = true;
     if (para_.dataTrain_.type == "image")
     { buffer.reset ();
-      reader = std::thread (&DataBuffer<float>::read_image, &buffer, std::ref(para_.tFormat_), std::ref(mean_[did]));
+      reader = std::thread (&DataBuffer<float>::read_image, &buffer, std::ref(para_.tFormat_), std::ref(mean_));
     }
 
     batch_[did].reset ();
@@ -223,9 +237,9 @@ void NNetModel<XPU>::train_epoch (DataBuffer<float> &buffer, const int did)
 
 template <typename XPU>
 void NNetModel<XPU>::eval_epoch (DataBuffer<float> &buffer, const int did)
-{ const int mini_batch = batch_[did].data_.nums();
+{ const int mini_batch = para_.tFormat_.nums;
+  const int numBatches = para_.tFormat_.numBatch;
   const int numBuffers = buffer.lnums_ / buffer.data_.nums();
-  const int numBatches = buffer.data_.nums() / mini_batch;
   std::thread reader;
 
   float test_err = 0.f;
@@ -233,7 +247,7 @@ void NNetModel<XPU>::eval_epoch (DataBuffer<float> &buffer, const int did)
   { para_.tFormat_.isTrain = false;
     if (para_.dataTest_.type == "image")
     { buffer.reset ();
-      reader = std::thread (&DataBuffer<float>::read_image, &buffer, std::ref(para_.tFormat_), std::ref(mean_[did]));
+      reader = std::thread (&DataBuffer<float>::read_image, &buffer, std::ref(para_.tFormat_), std::ref(mean_));
     }
 
     batch_[did].reset ();
