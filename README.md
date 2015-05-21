@@ -1,4 +1,4 @@
-# spDL ———— small potato's Deep Learning
+# DLisOK
     cudaBase.cpp    CUDA基本操作
     learnForest.cpp 是几年前写的，现不再维护，有需要时重构
     nnet.h  神经网络头文件
