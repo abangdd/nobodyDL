@@ -13,6 +13,6 @@
     tensorVML.cpp   张量向量计算
     xpu.h   设备头文件
     
-    imagenet112_conv.cfg  imagenet数据集（128*128像素）训练的网络结构，分 8层和10层两种
+    imagenet112_conv_08.cfg  imagenet数据集（128*128像素）训练的8层全卷积网络结构
     
     两卡训练加速1.9+倍
