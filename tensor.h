@@ -1,8 +1,7 @@
 #ifndef TENSOR_H_
 #define TENSOR_H_
 
-#include <glog/logging.h>
-#include <libconfig.h++>
+#include <memory.h>
 
 #include "util.h"
 #include "expr.h"
@@ -50,8 +49,7 @@ public:
 
 enum rand_t
 { GAUSSIAN	= 1,
-  UNIFORM	= 2,
-  XAVIER	= 3
+  UNIFORM	= 2
 };
 
 void rand_check (const int status);
@@ -64,7 +62,6 @@ public:
   void set_seed (int seed);
   void gaussian (float *data, int size, const float mu, const float sigma) const;
   void uniform  (float *data, int size, const float  a, const float b)     const;
-  void xavier   (float *data, int size, const int   in, const int out)     const;
 private:
   int did_;
 #ifdef __CUDACC__
@@ -120,8 +117,8 @@ public:
   void read_image_label (const DataImage &dimg, const string &file, const int idx);
   void read_image (const TensorFormat &tf, const vector<string> &imgList);
 public:
-  void constant (const DT a);
-  void random (const Random<XPU> &random, const int rand_method, const DT a=0.f,  const DT b=1.f);
+  void init (const DT a);
+  void init (const Random<XPU> &random, const int rand_method, const DT a=0.f,  const DT b=1.f);
   void im2col_fprop (const Patch &p, Tensor<XPU, DT> &im_col);
   void col2im_bprop (const Patch &p, Tensor<XPU, DT> &im_col);
   void shuffle (const vector<int> &idx);
@@ -178,6 +175,9 @@ public:
   size_t size_d () const { return shape.size * sizeof(DT);  }
   void print (const int cnt) const;
 #ifdef __CUDACC__
+  cudaStream_t   get_copy_stream () const { return dnnctx[did_]->stream_;  }
+  cudaStream_t   get_cmpt_stream () const { return dnnctx[did_]->stream_;  }
+  cublasHandle_t get_blas_handle () const { return dnnctx[did_]->cublas_;  }
   void setTensor4dDescriptor (cudnnTensorDescriptor_t &desc);
   void setFilter4dDescriptor (cudnnFilterDescriptor_t &desc);
 #endif
