@@ -76,7 +76,6 @@ template <typename XPU, typename DT>
 void OptimVSGD<XPU, DT>::optimize (SparseBuffer<XPU, DT> &buffer)
 { this->set_cache (buffer.data_, buffer.label_);
 
-  int epoch = 0;
   while (epoch++ < 30)
   { this->get_grad (buffer);
     this->get_eval (buffer, this->loss_k);
