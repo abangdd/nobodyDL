@@ -1,6 +1,7 @@
 #ifndef XPU_H_
 #define XPU_H_
 
+#include <omp.h>
 #include <stdio.h>
 #include <sys/types.h>
 #ifdef __CUDACC__
@@ -74,6 +75,7 @@
 
 
 void cuda_set_p2p ();
+void cuda_del_p2p ();
 void cuda_set_device (const int did);
 void cuda_stream_sync(const int did);
 int  cuda_get_blocks (const int N);
@@ -85,6 +87,7 @@ public:
   void reset ();
   int  did_;
 #ifdef __CUDACC__
+  cudaEvent_t       accept_ = nullptr;
   cudaStream_t      stream_ = nullptr;
   cublasHandle_t    cublas_ = nullptr;
   curandGenerator_t curand_ = nullptr;
