@@ -18,7 +18,13 @@ string ParaLayer::get_layer_type ()
 }
 
 void ParaNNet::config (const libconfig::Config &cfg)
-{ tFormat_  = TensorFormat (cfg);  tFormat_.numBatch /= NNET_NUM_DEVICES;
+{ num_device = cfg.lookup ("model.num_device");
+  num_evals  = cfg.lookup ("model.num_evals");
+  num_evals /= num_device;
+  num_rounds = cfg.lookup ("model.num_rounds");
+  max_rounds = cfg.lookup ("model.max_rounds");
+  
+  tFormat_  = TensorFormat (cfg);  tFormat_.numBatch /= num_device;
   dataTrain_= ParaFileData (cfg, "traindata");
   dataTest_ = ParaFileData (cfg,  "testdata");
 
@@ -29,7 +35,6 @@ void ParaNNet::config (const libconfig::Config &cfg)
   &pad		= cfg.lookup ("layer.pad"),
   &stride	= cfg.lookup ("layer.stride"),
   &flts		= cfg.lookup ("layer.flts"),
-  &grps		= cfg.lookup ("layer.grps"),
   &neuron	= cfg.lookup ("layer.neuron_t"),
   &pool		= cfg.lookup ("layer.pool_t"),
   &dropout	= cfg.lookup ("layer.dropout"),
@@ -38,16 +43,13 @@ void ParaNNet::config (const libconfig::Config &cfg)
   Setting
   &isLoad	= cfg.lookup ("model.isLoad"),
   &isFixed	= cfg.lookup ("model.isFixed"),
-  &isVarN	= cfg.lookup ("model.isVarN"),
   &sigma	= cfg.lookup ("model.sigma"),
-  &scale	= cfg.lookup ("model.scale"),
   &bias		= cfg.lookup ("model.bias"),
   &random	= cfg.lookup ("model.rand_t");
 
-  Setting
-  &epsW		= cfg.lookup ("optim.epsW"),
-  &epsB		= cfg.lookup ("optim.epsB"),
-  &wd		= cfg.lookup ("optim.wd");
+  float epsW	= cfg.lookup ("optim.epsW");
+  float epsB	= cfg.lookup ("optim.epsB");
+  float wd	= cfg.lookup ("optim.wd");
 
   int max_fixed_layer = 0;
 
@@ -61,7 +63,6 @@ void ParaNNet::config (const libconfig::Config &cfg)
     pl.pad	= pad[i];
     pl.stride	= stride[i];
     pl.flts	= flts[i];
-    pl.grps	= grps[i];
 
     pl.neuron	= neuron[i];
     pl.pool	= pool[i];
@@ -71,9 +72,7 @@ void ParaNNet::config (const libconfig::Config &cfg)
     if (pl.type == kConvolution || pl.type == kFullConn)
     { pl.isLoad	= isLoad[j];
       pl.isFixed= isFixed[j];
-      pl.isVarN = isVarN[j];
       pl.sigma	= sigma[j];
-      pl.scale	= scale[j];
       pl.bias	= bias[j];
       pl.random	= random[j];
       j++;
@@ -106,18 +105,19 @@ void ParaNNet::config (const libconfig::Config &cfg)
   paraWmat_.clear();
   paraBias_.clear();
   for (int i = 0; i < isLoad.getLength(); i++)
-  { ParaOptim po;
+  { const float lr_multi = num_device * tFormat_.nums / 128.f;
+    ParaOptim po;
     po.type	= po.get_optim_type (cfg.lookup ("optim.type"));
     po.algo	=                    cfg.lookup ("optim.algo");
     po.isFixed	= isFixed[i];
     po.lr_alpha	= cfg.lookup ("optim.lr_alpha");
-    po.lr_last *= NNET_NUM_DEVICES * tFormat_.nums / 128.f;
+    po.lr_last *= lr_multi;
 
-    po.lr_base	= epsW[i];  po.lr_base *= NNET_NUM_DEVICES;
-    po.wd	= wd[i];
+    po.lr_base	= epsW;  po.lr_base *= lr_multi;
+    po.wd	= wd;
     paraWmat_.push_back (po);
 
-    po.lr_base	= epsB[i];  po.lr_base *= NNET_NUM_DEVICES;
+    po.lr_base	= epsB;  po.lr_base *= lr_multi;
     po.wd	= 0.f;
     paraBias_.push_back (po);
   }
@@ -127,9 +127,6 @@ void ParaNNet::config (const libconfig::Config &cfg)
   shape_src = Shape (tFormat_.rows, tFormat_.cols, tFormat_.chls, tFormat_.nums);
   shape_dst = Shape (tFormat_.numClass, 1, 1, tFormat_.nums);
 
-  num_evals  = cfg.lookup ("model.num_evals");
-  num_evals /= NNET_NUM_DEVICES;
-  num_rounds = cfg.lookup ("model.num_rounds");
   num_layers = paraLayer_.size();
   num_optims = paraWmat_ .size() + paraBias_ .size();
   num_nodes  = 0;
@@ -183,5 +180,12 @@ LayerBase<XPU>* create_layer (ParaLayer &pl, const int did, Tensor<XPU, float> &
 }
 template LayerBase<GPU>* create_layer (ParaLayer &pl, const int did, TensorGPUf &src, TensorGPUf &dst);
 template LayerBase<CPU>* create_layer (ParaLayer &pl, const int did, TensorCPUf &src, TensorCPUf &dst);
+
+template <typename XPU>
+void LayerBase<XPU>::get_model_info ()
+{ LOG (INFO) << "\tModel initializing\t" << pl_.get_layer_type() << "\t" << pl_.sigma;
+}
+template void LayerBase<GPU>::get_model_info ();
+template void LayerBase<CPU>::get_model_info ();
 
 #endif
