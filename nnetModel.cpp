@@ -6,13 +6,13 @@
 
 template <typename XPU>
 void NNetModel<XPU>::init ()
-{ train_. resize (NNET_NUM_DEVICES);
-   test_. resize (NNET_NUM_DEVICES);
-  batch_. resize (NNET_NUM_DEVICES);
-  nodes_. resize (NNET_NUM_DEVICES);
-  layers_.resize (NNET_NUM_DEVICES);
-  optims_.resize (NNET_NUM_DEVICES);
-  for (int did = 0; did < NNET_NUM_DEVICES; ++did)
+{ train_. resize (para_.num_device);
+   test_. resize (para_.num_device);
+  batch_. resize (para_.num_device);
+  nodes_. resize (para_.num_device);
+  layers_.resize (para_.num_device);
+  optims_.resize (para_.num_device);
+  for (int did = 0; did < para_.num_device; ++did)
   { cuda_set_device (did);
     mem_free (did);
   
@@ -32,8 +32,7 @@ void NNetModel<XPU>::init ()
   
     for (int i = 0, j = 0; i < para_.num_layers; ++i)
       if (para_.paraLayer_[i].type == kConvolution || para_.paraLayer_[i].type == kFullConn)
-      { LOG (INFO) << "\tModel initializing\t" << para_.paraLayer_[i].get_layer_type()
-          << "\t" << para_.paraLayer_[i].sigma << "\t" << para_.paraLayer_[i].scale;
+      { layers_[did][i]->get_model_info ();
         layers_[did][i]->init_model ();
         para_.paraWmat_[j].get_optim_info ();
       //para_.paraBias_[j].get_optim_info ();
@@ -93,8 +92,8 @@ void NNetModel<XPU>::update_wmat (const int did)
       { optims_[did][i]->update ();
         optims_[did][i]->accept_notify ();
       } else
-      for (int r = 1; r < NNET_NUM_DEVICES; r *= 2)
-      { const int k1  = NNET_NUM_DEVICES / r;
+      for (int r = 1; r < para_.num_device; r *= 2)
+      { const int k1  = para_.num_device / r;
         const int pid = did - k1 / 2;
         if (did % k1 == k1/2)
         { optims_[did][i]->accept_wait (*optims_[pid][i]);
@@ -110,8 +109,8 @@ void NNetModel<XPU>::reduce_gmat (const int did)
 { cuda_set_device (did);
   for (int i = optims_[did].size()-1; i >= 0; --i)
     if (!optims_[did][i]->para_.isFixed)
-    { for (int r = NNET_NUM_DEVICES / 2; r > 0; r /= 2)
-      { const int k1  = NNET_NUM_DEVICES / r;
+    { for (int r = para_.num_device / 2; r > 0; r /= 2)
+      { const int k1  = para_.num_device / r;
         const int pid = did + k1 / 2;
         if (did % k1 != 0)
         { optims_[did][i]->reduce_notify ();
@@ -121,7 +120,7 @@ void NNetModel<XPU>::reduce_gmat (const int did)
         }
       }
       if (did == 0)
-        optims_[did][i]->reduce_scal (1.f/NNET_NUM_DEVICES);
+        optims_[did][i]->reduce_scal (1.f/para_.num_device);
     }
 }
 
@@ -161,7 +160,7 @@ template void NNetModel<GPU>::show_model (const int did);
 
 template <typename XPU>
 void NNetModel<XPU>::train ()
-{ for (int did = 0; did < NNET_NUM_DEVICES; ++did)
+{ for (int did = 0; did < para_.num_device; ++did)
   { cuda_set_device (did);
 
     train_[did].create (para_.tFormat_, did);
@@ -177,18 +176,18 @@ void NNetModel<XPU>::train ()
   }
 
   dataIm_.init (para_.dataTrain_);
-  for (int did = 0; did < NNET_NUM_DEVICES; ++did)
-  { train_[did].image_.init (dataIm_, did, NNET_NUM_DEVICES);
+  for (int did = 0; did < para_.num_device; ++did)
+  { train_[did].image_.init (dataIm_, did, para_.num_device);
      test_[did].image_.init (para_.dataTest_);
     train_[did].lnums_ = train_[did].image_.img_list.size();
      test_[did].lnums_ =  test_[did].image_.img_list.size();
   }
 
-  for (int r = 0; r < para_.num_rounds; ++r)
-#pragma omp parallel num_threads (NNET_NUM_DEVICES)
+  for (int r = para_.max_rounds - para_.num_rounds; r < para_.max_rounds; ++r)
+#pragma omp parallel num_threads (para_.num_device)
   { const int did = omp_get_thread_num ();
     for (size_t i = 0; i < optims_[did].size(); ++i)
-      optims_[did][i]->para_.set_lrate (r, para_.num_rounds);
+      optims_[did][i]->para_.set_lrate (r, para_.max_rounds);
     train_epoch (train_[did], did);
   }
 }
