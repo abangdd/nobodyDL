@@ -9,11 +9,12 @@ std::vector<XPUCtx*> dnnctx;
 
 XPUCtx::~XPUCtx()
 { printf ("Device\t%d\treleasing\n",    did_);
-  if (cublas_)  cuda_check (cublasDestroy (cublas_));
-  if (curand_)  cuda_check (curandDestroyGenerator (curand_));
-  if (cudnn_ )  cuda_check (cudnnDestroy  (cudnn_));
-  if (stream_)  cuda_check (cudaStreamDestroy (stream_));
-  if (accept_)  cuda_check (cudaEventDestroy  (accept_));
+  cuda_check (cudaSetDevice (did_));
+  cuda_check (cublasDestroy (cublas_));
+  cuda_check (curandDestroyGenerator (curand_));
+  cuda_check (cudnnDestroy  (cudnn_));
+  cuda_check (cudaStreamDestroy (stream_));
+  cuda_check (cudaEventDestroy  (accept_));
 }
 
 void XPUCtx::reset ()
@@ -35,10 +36,10 @@ void XPUCtx::reset ()
 
 
 
-void cuda_set_p2p ()
-{ for (int did = 0; did < CUDA_NUM_DEVICES; ++did)
+void cuda_set_p2p (const int num_device)
+{ for (int did = 0; did < num_device; ++did)
   { cuda_set_device (did);
-    for (int pid = 0; pid < CUDA_NUM_DEVICES; ++pid)
+    for (int pid = 0; pid < num_device; ++pid)
       if (pid != did)
       { dnnctx[did]->cup2p_[pid] = 0;
         cuda_check (cudaDeviceCanAccessPeer (&dnnctx[did]->cup2p_[pid], did, pid));
@@ -49,10 +50,10 @@ void cuda_set_p2p ()
   }
 }
 
-void cuda_del_p2p ()
-{ for (int did = 0; did < CUDA_NUM_DEVICES; ++did)
+void cuda_del_p2p (const int num_device)
+{ for (int did = 0; did < num_device; ++did)
   { cuda_set_device (did);
-    for (int pid = 0; pid < CUDA_NUM_DEVICES; ++pid)
+    for (int pid = 0; pid < num_device; ++pid)
       if (pid != did)
       { cuda_check (cudaDeviceCanAccessPeer (&dnnctx[did]->cup2p_[pid], did, pid));
         if (dnnctx[did]->cup2p_[pid])
