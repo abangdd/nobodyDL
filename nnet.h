@@ -9,7 +9,6 @@
 #ifdef __CUDACC__
   #define USE_CUDNN true
 #endif
-  #define NNET_NUM_DEVICES 2
 
 using std::max;
 using std::min;
@@ -51,13 +50,13 @@ public:
   int type;
   int idxs, idxd;
   int ksize, pad, stride;
-  int flts, grps;
+  int flts;
   int random;
   int neuron;
   int pool;
   int loss;
-  bool isLoad, isFixed, isVarN;
-  float sigma, scale, bias, dropout;
+  bool isLoad, isFixed;
+  float sigma, bias, dropout;
 };
 
 
@@ -76,6 +75,7 @@ public:
   virtual void save_model (const string file) { }
   virtual void load_model (const string file) { }
   virtual void show_model () { }
+  virtual void get_model_info ();
   virtual void set_optimization (ParaOptim &paraWmat, ParaOptim &paraBias, vector<OptimBase<XPU, float>*> &optims) { }
   ParaLayer pl_;
   int did_;
@@ -159,7 +159,7 @@ private:
   Tensor<XPU, float> tsrc_;
   Tensor<XPU, float> tdst_;
   Tensor<XPU, float> mwmat_, nwmat_, iwmat_;
-  int nums_, dims_, chls_;
+  int dims_, nums_, flts_;
 };
 
 template <typename XPU>
@@ -248,9 +248,11 @@ public:
   ParaModel model_;
   Shape shape_src, shape_dst;
   int num_nodes;
+  int num_device;
   int num_layers;
   int num_optims;
   int num_rounds;
+  int max_rounds;
   int num_evals;
   int sdid, edid;
 };
@@ -259,7 +261,7 @@ template <typename XPU>
 class NNetModel {
 public:
   ~NNetModel ()
-  { for (int did = 0; did < NNET_NUM_DEVICES; ++did)  mem_free (did);  }
+  { for (int did = 0; did < para_.num_device; ++did)  mem_free (did);  }
   void mem_free (const int did);
   void init  ();
   void train ();
