@@ -14,7 +14,7 @@
     xpu.h   设备头文件
     
     imagenet112_conv_08.cfg  imagenet数据集（128*128像素）训练的8层全卷积网络结构
-    训练15轮准确率57.2%（single model single crop）
+    训练15轮准确率57.1%（single model single crop）
     训练30轮准确率58.9%（single model single crop）
     
     两卡训练加速1.9+倍
