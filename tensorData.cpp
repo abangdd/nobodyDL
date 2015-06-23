@@ -167,9 +167,9 @@ template <typename XPU, typename DT>
 void DataBatch<XPU, DT>::copy (const DataBuffer<DT> &in)
 {  data_.copy (in. data_.segment (curr_no_, curr_no_+data_.nums()));
   label_.copy (in.label_.segment (curr_no_, curr_no_+data_.nums()));
-  DT  label_sum  = label_.reduce_sum ();
-  if (label_sum != label_.nums())
-    LOG (ERROR) << "\tbatch labels not correct\t" << label_sum;
+//DT  label_sum  = label_.reduce_sum ();
+//if (label_sum != label_.nums())
+//  LOG (ERROR) << "\tbatch labels not correct\t" << label_sum;
 }
 #ifdef __CUDACC__
 template void DataBatch<GPU, float>::copy (const DataBuffer<float> &in);
