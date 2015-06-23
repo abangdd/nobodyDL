@@ -247,14 +247,16 @@ public:
   ParaFileData dataTest_;
   ParaModel model_;
   Shape shape_src, shape_dst;
+  int num_nnets;
   int num_nodes;
+  int num_evals;
+  int min_device;
+  int max_device;
   int num_device;
   int num_layers;
   int num_optims;
   int num_rounds;
   int max_rounds;
-  int num_evals;
-  int sdid, edid;
 };
 
 template <typename XPU>
