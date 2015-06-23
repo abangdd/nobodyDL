@@ -74,8 +74,8 @@
   for (int i = XPU_GET_ELEMENT_OFFSET; i < n; i += XPU_GET_ELEMENT_STRIDE)
 
 
-void cuda_set_p2p ();
-void cuda_del_p2p ();
+void cuda_set_p2p (const int num_device);
+void cuda_del_p2p (const int num_device);
 void cuda_set_device (const int did);
 void cuda_stream_sync(const int did);
 int  cuda_get_blocks (const int N);
