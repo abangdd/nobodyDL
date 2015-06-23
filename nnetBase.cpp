@@ -18,7 +18,10 @@ string ParaLayer::get_layer_type ()
 }
 
 void ParaNNet::config (const libconfig::Config &cfg)
-{ num_device = cfg.lookup ("model.num_device");
+{ min_device = cfg.lookup ("model.min_device");
+  max_device = cfg.lookup ("model.max_device");
+  num_device = max_device - min_device + 1;
+  num_nnets  = max_device + 1;
   num_evals  = cfg.lookup ("model.num_evals");
   num_evals /= num_device;
   num_rounds = cfg.lookup ("model.num_rounds");
