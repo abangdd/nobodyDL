@@ -15,9 +15,8 @@
     
     imagenet数据集配置文件（128*128像素）
     imagenet112_conv_08.cfg  8层全卷积网络结构
-    训练15轮准确率57.1%（single model single crop）
-    训练30轮准确率58.9%（single model single crop）
-    
+        训练15轮准确率57.1%（single model single crop）
+        训练30轮准确率58.9%（single model single crop）
     imagenet112_hash_08.cfg  8层全卷积网络结构，其中第6层只有16个卷积核，用于hash学习
     
     两卡训练加速1.9+倍
