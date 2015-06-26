@@ -17,7 +17,6 @@
     imagenet112_conv_08.cfg  8层全卷积网络结构
         训练15轮准确率57.1%（single model single crop）
         训练30轮准确率58.9%（single model single crop）
-        
     imagenet112_conv_12.cfg  12层全卷积网络结构
         训练15轮准确率61.6%（single model single crop）
     imagenet112_hash_12.cfg  12层全卷积网络结构，256 bits 哈希学习
