@@ -15,10 +15,10 @@
     
     imagenet数据集配置文件（128*128像素）
     imagenet112_conv_08.cfg   8层全卷积网络结构
-        训练15轮准确率57.1%（single model single crop），相当于AlexNet 8卡并行训练90轮的准确率
+        训练15轮准确率57.1%（single model single crop），等同于AlexNet 8卡并行训练90轮的准确率
         训练30轮准确率58.9%（single model single crop）
     imagenet112_conv_12.cfg  12层全卷积网络结构
-        训练15轮准确率61.6%（single model single crop），GTX980ti单卡训练只需要13小时
+        训练15轮准确率61.6%（single model single crop），用GTX980ti单卡训练只需要13小时
     imagenet112_hash_12.cfg  12层全卷积网络结构，256 bits 哈希学习
         训练15轮准确率56.6%（single model single crop）
         
