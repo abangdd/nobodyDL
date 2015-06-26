@@ -18,7 +18,7 @@
         训练15轮准确率57.1%（single model single crop），相当于AlexNet 8卡并行训练90轮的准确率
         训练30轮准确率58.9%（single model single crop）
     imagenet112_conv_12.cfg  12层全卷积网络结构
-        训练15轮准确率61.6%（single model single crop）
+        训练15轮准确率61.6%（single model single crop），GTX980ti单卡训练只需要13小时
     imagenet112_hash_12.cfg  12层全卷积网络结构，256 bits 哈希学习
         训练15轮准确率56.6%（single model single crop）
         
