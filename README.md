@@ -13,13 +13,13 @@
     tensorVML.cpp   张量向量计算
     xpu.h   设备头文件
     
-    imagenet数据集配置文件（128*128像素）
+    imagenet数据集配置文件（128*128像素），一些小型网络的例子
     imagenet112_conv_08.cfg   8层全卷积网络结构
         训练15轮准确率57.1%（single model single crop），等同于AlexNet 8卡并行训练90轮的准确率
         训练30轮准确率58.9%（single model single crop）
     imagenet112_conv_10.cfg  10层全卷积网络结构
         训练15轮准确率59.8%（single model single crop），用GTX980ti单卡训练只需要10小时
-    imagenet112_hash_12.cfg  12层全卷积网络结构，256 bits 哈希学习
-        训练15轮准确率56.6%（single model single crop）
+    imagenet112_hash_10.cfg  10层全卷积网络结构，256 bits 哈希学习
+        训练15轮准确率53.7%（single model single crop）
         
     两卡训练加速1.9+倍
