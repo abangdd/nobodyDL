@@ -127,38 +127,6 @@ void NNetModel<XPU>::reduce_gmat (const int did)
 
 
 template <typename XPU>
-void NNetModel<XPU>::save_model (const int did)
-{ cuda_set_device (did);
-  if (did != para_.min_device)
-    return;
-  for (int i = 0; i < para_.num_layers; ++i)
-  { char layerid[16];  sprintf (layerid, "%02d", i);
-    layers_[did][i]->save_model (para_.model_.path+"_layer_"+layerid);
-  }
-}
-template void NNetModel<GPU>::save_model (const int did);
-
-template <typename XPU>
-void NNetModel<XPU>::load_model (const int did)
-{ cuda_set_device (did);
-  for (int i = 0; i < para_.num_layers; ++i)
-  { char layerid[16];  sprintf (layerid, "%02d", i);
-    layers_[did][i]->load_model (para_.model_.path+"_layer_"+layerid);
-  }
-}
-template void NNetModel<GPU>::load_model (const int did);
-
-template <typename XPU>
-void NNetModel<XPU>::show_model (const int did)
-{ cuda_set_device (did);
-  for (int i = 0; i < para_.num_layers; ++i)
-    layers_[did][i]->show_model ();
-}
-template void NNetModel<GPU>::show_model (const int did);
-
-
-
-template <typename XPU>
 void NNetModel<XPU>::train ()
 { for (int did = para_.min_device; did <= para_.max_device; ++did)
   { cuda_set_device (did);
