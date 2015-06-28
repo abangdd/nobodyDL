@@ -19,7 +19,10 @@
         训练30轮准确率58.9%（single model single crop）
     imagenet112_conv_10.cfg  10层全卷积网络结构
         训练15轮准确率59.8%（single model single crop），用GTX980ti单卡训练只需要10小时
+        
     imagenet112_hash_10.cfg  10层全卷积网络结构，256 bits 哈希学习
         训练15轮准确率53.7%（single model single crop）
+    imagenet224_hash_12.cfg  12层全卷积网络结构，256 bits 哈希学习
+        训练15轮准确率63.4%（single model single crop）
         
     两卡训练加速1.9+倍
