@@ -8,6 +8,7 @@
   #include <cuda.h>
   #include <driver_types.h>
   #include <thrust/device_vector.h>
+//#include <cublas.h>
   #include <cublas_v2.h>
   #include <cusparse.h>
   #include <curand.h>
@@ -83,8 +84,8 @@ int  cuda_get_blocks (const int N);
 class XPUCtx {
 public:
   explicit XPUCtx (const int did) : did_(did) { }
-  ~XPUCtx ();
   void reset ();
+  void release ();
   int  did_;
 #ifdef __CUDACC__
   cudaEvent_t       accept_ = nullptr;
