@@ -15,6 +15,6 @@
     
     
     imagenet224_hash_15.cfg  15层全卷积网络结构，256 bits 哈希学习
-        训练30轮准确率67.x%（single model single crop），用GTX980ti单卡训练共需112小时，合每秒95帧
+        训练30轮准确率67.x%（single model single crop），用GTX980ti单卡训练112小时，合每秒95帧
         
     两卡训练加速1.9+倍
