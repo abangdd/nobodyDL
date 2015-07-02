@@ -14,7 +14,7 @@
     xpu.h   设备头文件
     
     
-    imagenet224_hash_12.cfg  12层全卷积网络结构，256 bits 哈希学习
-        训练15轮准确率63.4%（single model single crop），用GTX980ti单卡训练只需要40小时
+    imagenet224_hash_15.cfg  15层全卷积网络结构，256 bits 哈希学习
+        训练30轮准确率67.x%（single model single crop），用GTX980ti单卡训练每秒95帧
         
     两卡训练加速1.9+倍
