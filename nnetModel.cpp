@@ -49,7 +49,6 @@ void NNetModel<XPU>::init ()
     //show_model (did);
     }
   }
-  mean_.load (para_.dataTrain_.mean, 0);
 }
 template void NNetModel<GPU>::init ();
 template void NNetModel<CPU>::init ();
@@ -127,6 +126,38 @@ void NNetModel<XPU>::reduce_gmat (const int did)
 
 
 template <typename XPU>
+void NNetModel<XPU>::save_model (const int did)
+{ cuda_set_device (did);
+  if (did != para_.min_device)
+    return;
+  for (int i = 0; i < para_.num_layers; ++i)
+  { char layerid[16];  sprintf (layerid, "%02d", i);
+    layers_[did][i]->save_model (para_.model_.path+"_layer_"+layerid);
+  }
+}
+template void NNetModel<GPU>::save_model (const int did);
+
+template <typename XPU>
+void NNetModel<XPU>::load_model (const int did)
+{ cuda_set_device (did);
+  for (int i = 0; i < para_.num_layers; ++i)
+  { char layerid[16];  sprintf (layerid, "%02d", i);
+    layers_[did][i]->load_model (para_.model_.path+"_layer_"+layerid);
+  }
+}
+template void NNetModel<GPU>::load_model (const int did);
+
+template <typename XPU>
+void NNetModel<XPU>::show_model (const int did)
+{ cuda_set_device (did);
+  for (int i = 0; i < para_.num_layers; ++i)
+    layers_[did][i]->show_model ();
+}
+template void NNetModel<GPU>::show_model (const int did);
+
+
+
+template <typename XPU>
 void NNetModel<XPU>::train ()
 { for (int did = para_.min_device; did <= para_.max_device; ++did)
   { cuda_set_device (did);
@@ -135,8 +166,10 @@ void NNetModel<XPU>::train ()
      test_[did].create (para_.tFormat_, did);
     train_[did].read (para_.dataTrain_);
      test_[did].read (para_.dataTest_);
-    train_[did].data_.sub_mean (mean_);
-     test_[did].data_.sub_mean (mean_);
+    train_[did].read_stats (para_.dataTrain_);
+     test_[did].read_stats (para_.dataTest_);
+    train_[did].data_.sub_mean (train_[did].mean_);
+     test_[did].data_.sub_mean ( test_[did].mean_);
 #ifdef __CUDACC__
     train_[did].page_lock ();
      test_[did].page_lock ();
@@ -175,7 +208,7 @@ void NNetModel<XPU>::train_epoch (DataBuffer<float> &buffer, const int did)
   { para_.tFormat_.isTrain = true;
     if (para_.dataTrain_.type == "image")
     { buffer.reset ();
-      reader = std::thread (&DataBuffer<float>::read_image, &buffer, std::ref(para_.tFormat_), std::ref(mean_));
+      reader = std::thread (&DataBuffer<float>::read_image, &buffer, std::ref(para_.tFormat_));
     }
 
     batch_[did].reset ();
@@ -214,7 +247,7 @@ void NNetModel<XPU>::eval_epoch (DataBuffer<float> &buffer, const int did)
   { para_.tFormat_.isTrain = false;
     if (para_.dataTest_.type == "image")
     { buffer.reset ();
-      reader = std::thread (&DataBuffer<float>::read_image, &buffer, std::ref(para_.tFormat_), std::ref(mean_));
+      reader = std::thread (&DataBuffer<float>::read_image, &buffer, std::ref(para_.tFormat_));
     }
 
     batch_[did].reset ();
