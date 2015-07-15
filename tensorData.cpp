@@ -91,20 +91,41 @@ void DataBuffer<DT>::read_tensor (const ParaFileData &pd)
 }
 template void DataBuffer<float>::read_tensor (const ParaFileData &pd);
 
+template <typename DT>
+void DataBuffer<DT>::read_stats  (const ParaFileData &pd)
+{   mean_.load (pd.  mean, 0);
+  eigvec_.load (pd.eigvec, 0);
+  eigval_.load (pd.eigval, 0);
+}
+template void DataBuffer<float>::read_stats  (const ParaFileData &pd);
+
 template <>
-void DataBuffer<float>::read_image (const TensorFormat &format, const TensorCPUf &mean)
+void DataBuffer<float>::read_image          (const TensorFormat &format)
 { if (curr_no_ + data_.nums() > lnums_)
     curr_no_ = 0;
   cnums_ = 0;
 //#pragma omp parallel for
   for (int i = 0; i < data_.nums(); ++i)
   { const int idx = curr_no_ + i;
-     data_.read_image_data  (format, image_.img_list[idx], i, mean);
+     data_.read_image_data  (format, image_.img_list[idx], i, mean_, eigvec_, eigval_, rand_);
     label_.read_image_label (image_, image_.img_list[idx], i);
     cnums_ += 1;
   }
   curr_no_ += data_.nums();
 //LOG (INFO) << "\timage read\tnumImages = " << data_.nums();
+}
+
+template <>
+void DataBuffer<float>::read_image_parallel (const TensorFormat &format)
+{ if (curr_no_ + data_.nums() > lnums_)
+    curr_no_ = 0;
+#pragma omp parallel for
+  for (int i = 0; i < data_.nums(); ++i)
+  { const int idx = curr_no_ + i;
+     data_.read_image_data  (format, image_.img_list[idx], i, mean_, eigvec_, eigval_, rand_);
+  }
+  curr_no_ += data_.nums();
+  LOG (INFO) << "\timage read\tnumImages = " << data_.nums();
 }
 
 template <typename DT>
@@ -131,6 +152,33 @@ void DataBuffer<DT>::get_mean (const ParaFileData &pd, const TensorFormat &tf)
   mean_g.save (pd.mean);
 }
 template void DataBuffer<float>::get_mean (const ParaFileData &pd, const TensorFormat &tf);
+
+template <typename DT>
+void DataBuffer<DT>::sampling (const ParaFileData &pd, const TensorFormat &tf, const int keepdim, Tensor<CPU, DT> &sample)
+{ const int nums =  data_.nums();
+  const int bats = lnums_ / nums;
+  const int cols = 1024;
+  const int dims = data_.shape.get_dimsX (keepdim);
+  const int strd = data_.shape.get_sizeX (keepdim);
+  const int rows = 2147483648 / dims / cols / bats;
+
+  Shape sshape (rows, dims, cols, bats);  sample.create (sshape);
+  for (int b = 0; b < bats; ++b)
+  { if (pd.type == "image")
+      read_image_parallel (tf);
+    DT *sptr = sample[b].dptr;
+    for (int i = 0; i < rows*cols; ++i)
+    { const int idx = rand() % nums;  // i / strd;
+      const int pos = rand() % strd;  // i % strd;
+      for (int j = 0; j < dims; ++j)
+        sptr[i*dims+j] = data_.dptr[(idx*dims+j)*strd+pos];
+    }
+  }
+  sample.shape.re_shape (rows*cols*bats, dims, 1, 1);
+//cvar.blas_gemm (true, false, sample, sample, 1, 0);
+//cvar.blas_scal (1.f/1000/cols/bats);
+}
+template void DataBuffer<float>::sampling (const ParaFileData &pd, const TensorFormat &tf, const int keepdim, TensorCPUf &sample);
 
 template <typename DT>
 void DataBuffer<DT>::evaluate (DT &err)
