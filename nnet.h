@@ -286,7 +286,6 @@ public:
   vector<DataBatch<XPU, float>>      batch_;
   vector<DataBuffer<float>> train_;
   vector<DataBuffer<float>>  test_;
-  Tensor<CPU, float> mean_;
 };
 
 #endif
