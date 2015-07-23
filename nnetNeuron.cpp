@@ -62,12 +62,12 @@ LAYER_FORWARD (LayerNeuron)
 { 
 #ifdef __CUDACC__
   dst_.mem_set (0);
-  cuda_check (cudnnActivationForward (dnnctx[did_]->cudnn_, get_activation_type(),
+  cuda_check (cudnnActivationForward (CUDNN_HANDLE, get_activation_type(),
     &alpha, srcDesc_, src_.dptr,
     &beta,  dstDesc_, dst_.dptr));
 #else
   const int N = dst_.size();
-  XPU_KERNEL_LAUNCH (NeuronForward,  cuda_get_blocks(N), CUDA_NUM_THREADS, 0, dnnctx[did_]->stream_,
+  XPU_KERNEL_LAUNCH (NeuronForward,  cuda_get_blocks(N), CUDA_NUM_THREADS, 0, CUDNN_STREAM,
     N, src_.dptr, dst_.dptr, pl_.neuron);
   cuda_sync_check ("NeuronForward");
 #endif
@@ -76,14 +76,14 @@ LAYER_FORWARD (LayerNeuron)
 LAYER_BACKPROP (LayerNeuron)
 {
 #ifdef __CUDACC__
-  cuda_check (cudnnActivationBackward (dnnctx[did_]->cudnn_, get_activation_type(),
+  cuda_check (cudnnActivationBackward (CUDNN_HANDLE, get_activation_type(),
     &alpha, dstDesc_, src_.dptr, dstDesc_, dst_.dptr, srcDesc_, src_.dptr,
     &beta,  srcDesc_, dst_.dptr));
   src_.copy (dst_);
 #else
   const int N = dst_.size();
   if (is_prop_grad)
-  XPU_KERNEL_LAUNCH (NeuronBackward, cuda_get_blocks(N), CUDA_NUM_THREADS, 0, dnnctx[did_]->stream_,
+  XPU_KERNEL_LAUNCH (NeuronBackward, cuda_get_blocks(N), CUDA_NUM_THREADS, 0, CUDNN_STREAM,
     N, src_.dptr, dst_.dptr, pl_.neuron);
   cuda_sync_check ("NeuronBackward");
 #endif
