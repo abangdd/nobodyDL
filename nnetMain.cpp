@@ -12,7 +12,7 @@ int main (int argc, char** argv)
 { fLB::FLAGS_colorlogtostderr = true;
   google::ParseCommandLineFlags (&argc, &argv, true);
   GLogHelper glogh (argv[0], "/home/liuminxu/log/nnetMain.");
-
+//srand ((unsigned)time(NULL));
 //omp_set_num_threads (4);
 //mkl_set_num_threads (4);
 
@@ -31,6 +31,6 @@ int main (int argc, char** argv)
   model.train ();
 
 //cuda_del_p2p (model.para_.num_device);
-//for (int i = 0; i < CUDA_NUM_DEVICE; ++i)
-//  delete dnnctx[i];
+  for (int i = model.para_.min_device; i <= model.para_.max_device; ++i)
+    dnnctx[i]->release ();
 }
