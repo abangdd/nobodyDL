@@ -2,7 +2,6 @@
 #define NNET_H_
 
 #include <cudnn.h>
-#include <libconfig.h++>
 #include "tensor.h"
 #include "optimization.h"
 
@@ -77,6 +76,10 @@ public:
   virtual void show_model () { }
   virtual void get_model_info ();
   virtual void set_optimization (ParaOptim &paraWmat, ParaOptim &paraBias, vector<OptimBase<XPU, float>*> &optims) { }
+#ifdef __CUDACC__
+  virtual cudaStream_t  get_calc_stream () const { return dnnctx[did_]->stream_;  }
+  virtual cudnnHandle_t get_cunn_handle () const { return dnnctx[did_]->cudnn_;   }
+#endif
   ParaLayer pl_;
   int did_;
 };
@@ -105,6 +108,9 @@ public:
   void save_model (const string file); \
   void load_model (const string file); \
   void set_optimization (ParaOptim &paraWmat, ParaOptim &paraBias, vector<OptimBase<XPU, float>*> &optims)
+
+#define CUDNN_HANDLE  LayerBase<XPU>::get_cunn_handle()
+#define CUDNN_STREAM  LayerBase<XPU>::get_calc_stream()
 
 #define LAYER_MEMBER \
   ParaLayer pl_; \
