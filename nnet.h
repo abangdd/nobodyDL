@@ -261,8 +261,9 @@ public:
   int num_device;
   int num_layers;
   int num_optims;
-  int num_rounds;
-  int max_rounds;
+  int stt_round;
+  int end_round;
+  int max_round;
 };
 
 template <typename XPU>
