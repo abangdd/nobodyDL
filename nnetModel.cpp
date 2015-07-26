@@ -184,11 +184,11 @@ void NNetModel<XPU>::train ()
      test_[did].lnums_ =  test_[did].image_.img_list.size();
   }
 
-  for (int r = para_.max_rounds - para_.num_rounds; r < para_.max_rounds; ++r)
+  for (int r = para_.stt_round; r < para_.end_round; ++r)
 #pragma omp parallel for
   for (int did = para_.min_device; did <= para_.max_device; ++did)
   { for (size_t i = 0; i < optims_[did].size(); ++i)
-      optims_[did][i]->para_.set_lrate (r, para_.max_rounds);
+      optims_[did][i]->para_.set_lrate (r, para_.max_round);
     train_epoch (train_[did], did);
   }
 }
