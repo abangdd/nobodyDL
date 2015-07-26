@@ -24,8 +24,9 @@ void ParaNNet::config (const libconfig::Config &cfg)
   num_nnets  = max_device + 1;
   num_evals  = cfg.lookup ("model.num_evals");
   num_evals /= num_device;
-  num_rounds = cfg.lookup ("model.num_rounds");
-  max_rounds = cfg.lookup ("model.max_rounds");
+  stt_round  = cfg.lookup ("model.stt_round");
+  end_round  = cfg.lookup ("model.end_round");
+  max_round  = cfg.lookup ("model.max_round");
   
   tFormat_  = TensorFormat (cfg);  tFormat_.numBatch /= num_device;
   dataTrain_= ParaFileData (cfg, "traindata");
@@ -52,6 +53,7 @@ void ParaNNet::config (const libconfig::Config &cfg)
 
   float epsW	= cfg.lookup ("optim.epsW");
   float epsB	= cfg.lookup ("optim.epsB");
+  float epsE	= cfg.lookup ("optim.epsE");
   float wd	= cfg.lookup ("optim.wd");
 
   int max_fixed_layer = 0;
@@ -113,9 +115,8 @@ void ParaNNet::config (const libconfig::Config &cfg)
     po.type	= po.get_optim_type (cfg.lookup ("optim.type"));
     po.algo	=                    cfg.lookup ("optim.algo");
     po.isFixed	= isFixed[i];
-    po.lr_alpha	= cfg.lookup ("optim.lr_alpha");
-    po.lr_last *= lr_multi;
 
+    po.lr_last	= epsE;  po.lr_last *= lr_multi;
     po.lr_base	= epsW;  po.lr_base *= lr_multi;
     po.wd	= wd;
     paraWmat_.push_back (po);
