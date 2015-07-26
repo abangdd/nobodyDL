@@ -41,8 +41,8 @@ public:
   virtual void accept_notify () { accept_.notify ();  }
   virtual void reduce_wait (OptimBase<XPU, DT> &in)  { in.reduce_.wait ();  }
   virtual void accept_wait (OptimBase<XPU, DT> &in)  { in.accept_.wait ();  }
-  virtual void reduce_gmat (OptimBase<XPU, DT> &in)  { gmat_.blas_axpy (in.gmat_, (DT)1.);  }
-  virtual void accept_wmat (OptimBase<XPU, DT> &in)  { wmat_.copy      (in.wmat_);  }
+  virtual void reduce_gmat (OptimBase<XPU, DT> &in)  { gmat_.blas_axpy (in.gmat_, (DT)1.);  cuda_stream_sync (did_);  }
+  virtual void accept_wmat (OptimBase<XPU, DT> &in)  { wmat_.copy      (in.wmat_);          cuda_stream_sync (did_);  }
   virtual void reduce_scal (const DT alpha)          { gmat_.blas_scal (alpha);  }
   void set_cache(SparseTensor<XPU, DT> &data, Tensor<XPU, DT> &label);
   void get_pred (SparseTensor<XPU, DT> &data, Tensor<XPU, DT> &pred);
