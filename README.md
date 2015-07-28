@@ -7,6 +7,7 @@
     nnetModel.cpp 神经网络训练+预测
     optimization.h  优化算法头文件
     optimLBFGS.cpp  优化算法LBFGS
+    optimSearch.cpp 优化算法步长搜索
     optimVSGD.cpp   优化算法SGD
     sparse.h  稀疏矩阵头文件
     tensor.h  张量头文件
