@@ -50,9 +50,7 @@ public:
   void get_grad (SparseBuffer<XPU, DT> &buffer);
   void get_eval (SparseBuffer<XPU, DT> &buffer, DT &loss);
   bool line_search_backtracking (SparseBuffer<XPU, DT> &buffer, const Tensor<XPU, DT> &dir,
-    Tensor<XPU, DT> &wvec, Tensor<XPU, DT> &gvec, int &evals, int maxEvals);
-  bool line_search (SparseBuffer<XPU, DT> &buffer, const Tensor<XPU, DT> &dir,
-    Tensor<XPU, DT> &wvec, Tensor<XPU, DT> &gvec, int &evals, int maxEvals);
+    const Tensor<XPU, DT> &wvec_b, int &evals, int maxEvals);
 public:
   ParaOptim &para_;
   int did_;
