@@ -92,7 +92,7 @@ void OptimLBFGS<XPU, DT>::optimize (SparseBuffer<XPU, DT> &buffer)
     wvec_j.copy (wvec_k);
     gvec_j.copy (gvec_k);
     int evals = 0;
-    if (!this->line_search_backtracking (buffer, dir, wvec_k, gvec_k, evals, 5))
+    if (!this->line_search_backtracking (buffer, dir, wvec_j, evals, 5))
       break;
 
     set_s_y_rho_h (k);
