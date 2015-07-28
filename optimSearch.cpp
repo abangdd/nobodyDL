@@ -31,7 +31,7 @@ bool OptimBase<XPU, DT>::line_search_backtracking (SparseBuffer<XPU, DT> &buffer
 
     ++count;
 
-    const bool armijo_violated = f_phi_alpha > f_phi_0 + c1 * step_length * d_phi_0;
+    const bool armijo_violated = f_phi_alpha > f_phi_0 + c1 * step_length * d_phi_0 + 1e-6;
 
     if (armijo_violated)
       rho = dec;
@@ -52,7 +52,6 @@ bool OptimBase<XPU, DT>::line_search_backtracking (SparseBuffer<XPU, DT> &buffer
     }
 
     step_length *= rho;
-  //return true;
   }
 }
 #ifdef __CUDACC__
