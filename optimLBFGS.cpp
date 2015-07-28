@@ -80,8 +80,8 @@ void OptimLBFGS<XPU, DT>::optimize (SparseBuffer<XPU, DT> &buffer)
   wvec_k = this->wmat_;  // x_k,  current solution
   gvec_k = this->gmat_;  // g_k,  current gradient
 
-  DT dtd;  gvec_k.blas_sdot (gvec_k, dtd);
-  this->step_length = 1.f / sqrt (dtd);
+  DT gnorm = 0.f;  gvec_k.blas_nrm2 (gnorm);
+  this->step_length = 1.f / gnorm;
 
   for (int k = 0; ; ++k)
   { if (terminate ())
@@ -92,9 +92,10 @@ void OptimLBFGS<XPU, DT>::optimize (SparseBuffer<XPU, DT> &buffer)
     wvec_j.copy (wvec_k);
     gvec_j.copy (gvec_k);
     int evals = 0;
-    if (!this->line_search_backtracking (buffer, dir, wvec_j, evals, 5))
+    if (!this->line_search_backtracking (buffer, dir, wvec_j, evals, 16))
+    { wvec_k.copy (wvec_j);
       break;
-
+    }
     set_s_y_rho_h (k);
 
     this->step_length = 1.f;
