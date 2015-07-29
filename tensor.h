@@ -1,268 +1,245 @@
-#ifndef NNET_MODEL_
-#define NNET_MODEL_
+#ifndef TENSOR_H_
+#define TENSOR_H_
 
-#include <algorithm>
-#include "../include/nnet.h"
+#include <memory.h>
 
-template <typename XPU>
-void NNetModel<XPU>::init ()
-{ train_. resize (para_.num_nnets);
-   test_. resize (para_.num_nnets);
-  batch_. resize (para_.num_nnets);
-  nodes_. resize (para_.num_nnets);
-  layers_.resize (para_.num_nnets);
-  optims_.resize (para_.num_nnets);
-  for (int did = para_.min_device; did <= para_.max_device; ++did)
-  { cuda_set_device (did);
-    mem_free (did);
+#include "util.h"
+#include "expr.h"
+#include "xpu.h"
 
-    nodes_[did].resize (para_.num_nodes);
-    nodes_[did][0].create                 (para_.shape_src, did);  // TODO
-    nodes_[did][para_.num_nodes-1].create (para_.shape_dst, did);  // TODO
-  
-    layers_[did].resize (para_.num_layers);
-    for (int i = 0; i < para_.num_layers; ++i)
-    { ParaLayer pl = para_.paraLayer_[i];
-      LOG (INFO) << "\tLayer initializing\t" << para_.paraLayer_[i].get_layer_type();
-      layers_[did][i] = create_layer (pl, did, nodes_[did][pl.idxs], nodes_[did][pl.idxd]);
-    }
+class Shape {
+public:
+  explicit Shape ();
+  explicit Shape (const int a, const int b, const int c, const int d);
+  explicit Shape (const int a, const int b, const int c, const int d, const size_t nnz);
+  bool operator == (const Shape &s) const;
+  bool operator != (const Shape &s) const;
+  void set_dims ();
+  void set_nums (const int n);
+  void set_chls (const int c);
+  void set_cols (const int c);
+  int get_dimsX (const int d) const;
+  int get_sizeX (const int d) const;
+  int get_strdX (const int d) const;
+  void re_shape (const int a, const int b, const int c, const int d);
+  void print ();
+  int rows, cols, chls, nums;
+  int dims;
+  size_t size;
+};
 
-    for (int i = 0; i < para_.num_nodes; ++i)
-      nodes_[did][i].shape.print ();
-  
-    for (int i = 0, j = 0; i < para_.num_layers; ++i)
-      if (para_.paraLayer_[i].type == kConvolution || para_.paraLayer_[i].type == kFullConn)
-      { layers_[did][i]->get_model_info ();
-        layers_[did][i]->init_model ();
-        para_.paraWmat_[j].get_optim_info ();
-      //para_.paraBias_[j].get_optim_info ();
-        layers_[did][i]->set_optimization (para_.paraWmat_[j], para_.paraBias_[j], optims_[did]);
-        j++;
-      }
-  
-    batch_[did].data_  = nodes_[did][0];
-    batch_[did].pred_  = nodes_[did][para_.num_nodes - 2];
-    batch_[did].label_ = nodes_[did][para_.num_nodes - 1];
-  
-    if (para_.model_.if_update)
-    { load_model (did);
-    //show_model (did);
-    }
-  }
-}
-template void NNetModel<GPU>::init ();
-template void NNetModel<CPU>::init ();
+class Patch {
+public:
+  explicit Patch () { }
+  explicit Patch (int a, int b, int c) : ksize(a), pad(b), stride(c)  { }
+  Shape get_pack_size (const Shape &in);  // 会改变patch
+  int ksize, pad, stride;
+  int h_col, w_col;
+};
 
-template <typename XPU>
-void NNetModel<XPU>::mem_free (const int did)
-{ cuda_set_device (did);
-  for (size_t i = 0; i < layers_[did].size(); ++i)
-    delete layers_[did][i];
-  for (size_t i = 0; i < optims_[did].size(); ++i)
-    delete optims_[did][i];
-   nodes_[did].clear();
-  layers_[did].clear();
-  optims_[did].clear();
-}
-template void NNetModel<GPU>::mem_free (const int did);
-template void NNetModel<CPU>::mem_free (const int did);
+class Pool {
+public:
+  explicit Pool () { }
+  explicit Pool (int a, int b, int c) : ksize(a), pad(b), stride(c)  { }
+  Shape get_pool_size (const Shape &in);  // 会改变pool
+  int ksize, pad, stride;
+  int h_pool, w_pool;
+};
+
+
+
+enum rand_t
+{ GAUSSIAN	= 1,
+  UNIFORM	= 2
+};
+
+void rand_check (const int status);
 
 template <typename XPU>
-void NNetModel<XPU>::fprop (const int did, const bool is_train)
-{ cuda_set_device (did);
-  for (size_t i = 0; i < layers_[did].size(); ++i)
-    layers_[did][i]->fprop (is_train);
-}
-
-template <typename XPU>
-void NNetModel<XPU>::bprop (const int did)
-{ cuda_set_device (did);
-  for (int i = layers_[did].size()-1; i >= 0; --i)
-    if (!layers_[did][i]->pl_.isFixed)
-      layers_[did][i]->bprop (i != 0);
-}
-
-template <typename XPU>
-void NNetModel<XPU>::update_wmat (const int did)
-{ cuda_set_device (did);
-  for (int i = optims_[did].size()-1; i >= 0; --i)
-    if (!optims_[did][i]->para_.isFixed)
-    { if (did == para_.min_device)
-      { optims_[did][i]->update ();
-        optims_[did][i]->accept_notify ();
-      } else
-      for (int r = 1; r < para_.num_device; r *= 2)
-      { const int k1  = para_.num_device / r;
-        const int pid = did - k1 / 2;
-        if (did % k1 == k1/2)
-        { optims_[did][i]->accept_wait (*optims_[pid][i]);
-          optims_[did][i]->accept_wmat (*optims_[pid][i]);
-          optims_[did][i]->accept_notify ();
-        }
-      }
-    }
-}
-
-template <typename XPU>
-void NNetModel<XPU>::reduce_gmat (const int did)
-{ cuda_set_device (did);
-  for (int i = optims_[did].size()-1; i >= 0; --i)
-    if (!optims_[did][i]->para_.isFixed)
-    { for (int r = para_.num_device / 2; r > 0; r /= 2)
-      { const int k1  = para_.num_device / r;
-        const int pid = did + k1 / 2;
-        if (did % k1 != para_.min_device)
-        { optims_[did][i]->reduce_notify ();
-        } else
-        { optims_[did][i]->reduce_wait (*optims_[pid][i]);
-          optims_[did][i]->reduce_gmat (*optims_[pid][i]);
-        }
-      }
-      if (did == para_.min_device)
-        optims_[did][i]->reduce_scal (1.f/para_.num_device);
-    }
-}
+class Random {
+public:
+  explicit Random (const int did);
+  ~Random();
+  void set_seed (int seed);
+  void gaussian (float *data, int size, const float mu, const float sigma) const;
+  void uniform  (float *data, int size, const float  a, const float b)     const;
+private:
+  int did_;
+  VSLStreamStatePtr vStream_;
+};
 
 
+class DataImage;
 
-template <typename XPU>
-void NNetModel<XPU>::save_model (const int did)
-{ cuda_set_device (did);
-  if (did != para_.min_device)
-    return;
-  for (int i = 0; i < para_.num_layers; ++i)
-  { char layerid[16];  sprintf (layerid, "%02d", i);
-    layers_[did][i]->save_model (para_.model_.path+"_layer_"+layerid);
-  }
-}
-template void NNetModel<GPU>::save_model (const int did);
+template <typename XPU, typename DT>
+class SparseTensor;
 
-template <typename XPU>
-void NNetModel<XPU>::load_model (const int did)
-{ cuda_set_device (did);
-  for (int i = 0; i < para_.num_layers; ++i)
-  { char layerid[16];  sprintf (layerid, "%02d", i);
-    layers_[did][i]->load_model (para_.model_.path+"_layer_"+layerid);
-  }
-}
-template void NNetModel<GPU>::load_model (const int did);
+class TensorFormat {
+public:
+  explicit TensorFormat () { };
+  explicit TensorFormat (const libconfig::Config &cfg);
+public:
+  int rows, cols, chls, nums;
+  int numBatch, numField, numClass;
+  bool isTrain;
+};
 
-template <typename XPU>
-void NNetModel<XPU>::show_model (const int did)
-{ cuda_set_device (did);
-  for (int i = 0; i < para_.num_layers; ++i)
-    layers_[did][i]->show_model ();
-}
-template void NNetModel<GPU>::show_model (const int did);
-
-
-
-template <typename XPU>
-void NNetModel<XPU>::train ()
-{ for (int did = para_.min_device; did <= para_.max_device; ++did)
-  { cuda_set_device (did);
-
-    train_[did].create (para_.tFormat_, did);
-     test_[did].create (para_.tFormat_, did);
-    train_[did].read (para_.dataTrain_);
-     test_[did].read (para_.dataTest_);
-    train_[did].read_stats (para_.dataTrain_);
-     test_[did].read_stats (para_.dataTest_);
-    train_[did].data_.sub_mean (train_[did].mean_);
-     test_[did].data_.sub_mean ( test_[did].mean_);
+template <typename XPU, typename DT>
+class Tensor : public XPU {
+public:
+  explicit Tensor ();
+  ~Tensor ();
+public:
+  void create (const Shape &s, const int did = 0);
+  void clear();
+  void copy (const Tensor<GPU, DT> &in);
+  void copy (const Tensor<CPU, DT> &in);
+  Tensor<XPU, DT> segment (const int begin, const int end) const;
+  Tensor<XPU, DT> operator[] (const int idx) const { return segment (idx, idx+1);  }
+  const Tensor<XPU, DT>& operator= (const Tensor<XPU, DT>& t);
+private:
+  void mem_alloc();
+  void mem_free ();
+public:
+  void mem_set (const unsigned char a);
+  void memcpy_from_gpu (void *ptr);
+  void memcpy_from_cpu (void *ptr);
+  void memcpy_to_gpu (void *ptr) const;
+  void memcpy_to_cpu (void *ptr) const;
+public:
+  void save (const string file);
+  void load (const string file, const int did);
+  void show_image ();
+  void read_image_data (const TensorFormat &tf, const string &file, const int idx,
+    const Tensor<XPU, DT> &mean, const Tensor<XPU, DT> &eigvec, const Tensor<XPU, DT> &eigval, const Random<XPU> &random);
+  void read_image_label (const DataImage &dimg, const string &file, const int idx);
+  void read_image (const TensorFormat &tf, const vector<string> &imgList);
+public:
+  void init (const DT a);
+  void init (const Random<XPU> &random, const int rand_method, const DT a=0.f,  const DT b=1.f);
+  void im2col_fprop (const Patch &p, Tensor<XPU, DT> &im_col);
+  void col2im_bprop (const Patch &p, Tensor<XPU, DT> &im_col);
+  void shuffle (const vector<int> &idx);
+  void softmax ();
+  void add (const DT val);
+public:
+  void blas_gemm (const bool transA, const bool transB,
+    const Tensor<XPU, DT> &A, const Tensor<XPU, DT> &B, DT alpha, DT beta);
+  void blas_gemv (const bool transA,
+    const Tensor<XPU, DT> &A, const Tensor<XPU, DT> &X, DT alpha, DT beta);
+  void sparse_gemv (const bool transA,
+    const SparseTensor<XPU, DT> &A, const Tensor<XPU, DT> &X, DT alpha, DT beta);
+public:
+  void blas_amax (int &idx, DT &val) const;
+  void blas_amin (int &idx, DT &val) const;
+  void blas_asum (DT &val) const;
+  void blas_axpy (const Tensor<XPU, DT> &in, DT alpha);
+  void blas_copy_from (const DT *x, const int incx, const int incy);
+  void blas_copy_to   (DT *x, const int incx, const int incy) const;
+  void blas_sdot (const Tensor<XPU, DT> &in, DT &val) const;
+  void blas_nrm2 (DT &val) const;
+  void blas_scal (DT alpha);
+public:
+  void sparse_axpy (const SparseTensor<XPU, DT> &in, DT alpha);
+public:
+  void blas_vadd (const Tensor<XPU, DT> &A, const Tensor<XPU, DT> &B);
+  void blas_vsub (const Tensor<XPU, DT> &A, const Tensor<XPU, DT> &B);
+  void blas_vmul (const Tensor<XPU, DT> &A, const Tensor<XPU, DT> &B);
+  void blas_vdiv (const Tensor<XPU, DT> &A, const Tensor<XPU, DT> &B);
+  void blas_vabs (const Tensor<XPU, DT> &in);
+  void blas_vexp (const Tensor<XPU, DT> &in);
+  void blas_vinv (const Tensor<XPU, DT> &in);
+  void blas_vsqr (const Tensor<XPU, DT> &in);
+  void blas_vsqrt(const Tensor<XPU, DT> &in);
+public:
+  DT reduce_sum () const;
+  DT reduce_max () const;
+  void reduce_sum  (const Tensor<XPU, DT> &in, const int keepdim);
+  void reduce_var  (const Tensor<XPU, DT> &in, const int keepdim);
+  void reduce_mean (const Tensor<XPU, DT> &in, const int keepdim);
+  void reduce_sum_product (const Tensor<XPU, DT> &ain, const Tensor<XPU, DT> &bin, const int keepdim);
+  void bdcast_minus (const Tensor<XPU, DT> &bin, const int keepdim);
+  void bdcast_mul   (const Tensor<XPU, DT> &bin, const int keepdim);
+  void bdcast_div   (const Tensor<XPU, DT> &bin, const int keepdim);
+  void bdcast_minus_product (const Tensor<XPU, DT> &ain, const Tensor<XPU, DT> &bin, const int keepdim);
+  void get_mean (Tensor<XPU, DT> &mean) const;
+  void sub_mean (const Tensor<XPU, DT> &mean);
+  void get_eigen(Tensor<XPU, DT> &eigvec, Tensor<XPU, DT> &eigval) const;
+public:
+  int rows () const { return shape.rows;  }
+  int cols () const { return shape.cols;  }
+  int chls () const { return shape.chls;  }
+  int nums () const { return shape.nums;  }
+  size_t size   () const { return shape.size;  }
+  size_t size_d () const { return shape.size * sizeof(DT);  }
+  void print (const int cnt) const;
 #ifdef __CUDACC__
-    train_[did].page_lock ();
-     test_[did].page_lock ();
+  cudaStream_t   get_copy_stream () const { return dnnctx[did_]->stream_;  }
+  cudaStream_t   get_cmpt_stream () const { return dnnctx[did_]->stream_;  }
+  cublasHandle_t get_blas_handle () const { return dnnctx[did_]->cublas_;  }
+  void setTensor4dDescriptor (cudnnTensorDescriptor_t &desc);
+  void setFilter4dDescriptor (cudnnFilterDescriptor_t &desc);
 #endif
-  }
+public:
+  Shape shape;
+  DT *dptr;
+  int did_;
+  bool cherry;
+};
 
-  dataIm_.init (para_.dataTrain_);
-  for (int did = para_.min_device; did <= para_.max_device; ++did)
-  { train_[did].image_.init (dataIm_, did - para_.min_device, para_.num_device);
-     test_[did].image_.init (para_.dataTest_);
-    train_[did].lnums_ = train_[did].image_.img_list.size();
-     test_[did].lnums_ =  test_[did].image_.img_list.size();
-  }
+typedef Tensor<GPU, float>  TensorGPUf;
+typedef Tensor<CPU, float>  TensorCPUf;
+typedef Tensor<GPU, double> TensorGPUd;
+typedef Tensor<CPU, double> TensorCPUd;
 
-  for (int r = para_.max_rounds - para_.num_rounds; r < para_.max_rounds; ++r)
-#pragma omp parallel for
-  for (int did = para_.min_device; did <= para_.max_device; ++did)
-  { for (size_t i = 0; i < optims_[did].size(); ++i)
-      optims_[did][i]->para_.set_lrate (r, para_.max_rounds);
-    train_epoch (train_[did], did);
-  }
-}
-template void NNetModel<GPU>::train ();
-template void NNetModel<CPU>::train ();
 
-template <typename XPU>
-void NNetModel<XPU>::train_epoch (DataBuffer<float> &buffer, const int did)
-{ const int numEvals   = para_.num_evals;
-  const int mini_batch = para_.tFormat_.nums;
-  const int numBatches = para_.tFormat_.numBatch;
-  const int numBuffers = buffer.lnums_ / buffer.data_.nums();
-  std::thread reader;
-  std::random_shuffle (buffer.image_.img_list.begin(), buffer.image_.img_list.end());
 
-  for (int i = 0; i < numBuffers; ++i)
-  { para_.tFormat_.isTrain = true;
-    if (para_.dataTrain_.type == "image")
-    { buffer.reset ();
-      reader = std::thread (&DataBuffer<float>::read_image, &buffer, std::ref(para_.tFormat_));
-    }
+template <typename DT>
+class DataBuffer {
+public:
+  explicit DataBuffer () : rand_(0), did_(0), curr_no_(0), lnums_(0) { }
+  void reset ();
+  void create (const TensorFormat &tf, const int did);
+  void page_lock ();
+  void page_unlk ();
+  void read_tensor (const ParaFileData &pd);
+  void read_stats  (const ParaFileData &pd);
+  void read_image          (const TensorFormat &tf);
+  void read_image_parallel (const TensorFormat &tf);
+  void read (const ParaFileData &pd);
+  void get_mean (const ParaFileData &pd, const TensorFormat &tf);
+  void sampling (const ParaFileData &pd, const TensorFormat &tf, const int keepdim, Tensor<CPU, DT> &sample);
+  void evaluate (DT &err);
+public:
+  Tensor<CPU, DT> inst_;
+  Tensor<CPU, DT> data_;
+  Tensor<CPU, DT> pred_;
+  Tensor<CPU, DT> mean_;
+  Random<CPU>     rand_;
+  Tensor<CPU, DT> eigvec_;
+  Tensor<CPU, DT> eigval_;
+  Tensor<CPU, DT> label_;
+  DataImage       image_;
+  int did_;
+  int curr_no_;
+  int lnums_, cnums_;
+};
 
-    batch_[did].reset ();
-    for (int j = 0; j < numBatches; ++j)
-    { while (buffer.cnums_ < (j+1)*mini_batch)
-        sleep (0.001);
-      if (para_.dataTrain_.type == "image")
-        batch_[did].copy (buffer);
-      else
-        batch_[did].rand (buffer);
-      fprop (did, true);
-      bprop (did);
-
-      reduce_gmat (did);
-      update_wmat (did);
-      batch_[did].next (buffer);
-    }
-    reader.join ();
-
-    if ((i+1) % (numBuffers/numEvals) == 0)
-    { eval_epoch ( test_[did], did);
-      save_model (did);
-    }
-  }
-}
-
-template <typename XPU>
-void NNetModel<XPU>::eval_epoch (DataBuffer<float> &buffer, const int did)
-{ const int mini_batch = para_.tFormat_.nums;
-  const int numBatches = para_.tFormat_.numBatch;
-  const int numBuffers = buffer.lnums_ / buffer.data_.nums();
-  std::thread reader;
-
-  float test_err = 0.f;
-  for (int i = 0; i < numBuffers; ++i)
-  { para_.tFormat_.isTrain = false;
-    if (para_.dataTest_.type == "image")
-    { buffer.reset ();
-      reader = std::thread (&DataBuffer<float>::read_image, &buffer, std::ref(para_.tFormat_));
-    }
-
-    batch_[did].reset ();
-    for (int j = 0; j < numBatches; ++j)
-    { while (buffer.cnums_ < (j+1)*mini_batch)
-        sleep (0.001);
-      batch_[did].copy (buffer);
-      fprop (did, false);
-      batch_[did].send (buffer);
-      batch_[did].next (buffer);
-    }
-    reader.join ();
-    buffer.evaluate (test_err);
-  }
-  LOG (INFO) << "\tGPU  " << did << "\ttest_err\t" << test_err / numBuffers;
-}
+template <typename XPU, typename DT>
+class DataBatch {
+public:
+  explicit DataBatch () : did_(0), curr_no_(0) { }
+  void reset ();
+  void copy (const DataBuffer<DT> &in);
+  void send (DataBuffer<DT> &in) const;
+  void next (const DataBuffer<DT> &in);
+  void rand (const DataBuffer<DT> &in);
+  Tensor<XPU, DT>  data_;
+  Tensor<XPU, DT>  pred_;
+  Tensor<XPU, DT> label_;
+  int did_;
+  int curr_no_;
+  int next_no_;
+};
 
 #endif
