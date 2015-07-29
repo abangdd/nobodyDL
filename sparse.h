@@ -1,7 +1,6 @@
 #ifndef SPARSE_H_
 #define SPARSE_H_
 
-#include <glog/logging.h>
 #include <libconfig.h++>
 
 #include "xpu.h"
@@ -46,28 +45,9 @@ public:
   void create (const Shape &s);
   void copy (const SparseTensor<GPU, DT> &in);
   void copy (const SparseTensor<CPU, DT> &in);
-  SparseTensor<XPU, DT> segment (const int begin, const int end) const;
-  SparseTensor<XPU, DT> operator[] (const int idx) const { return segment (idx, idx+1);  }
-  const SparseTensor<XPU, DT>& operator= (const SparseTensor<XPU, DT>& t);
 private:
   void mem_alloc();
   void mem_free ();
-public:
-  void mem_set (const unsigned char a);
-  void memcpy_from_gpu (void *ptr);
-  void memcpy_from_cpu (void *ptr);
-  void memcpy_to_gpu (void *ptr);
-  void memcpy_to_cpu (void *ptr);
-public:
-  void save (const string file);
-  void load (const string file);
-private:
-  void save (OFileStream &fs);
-  void load (IFileStream &fs);
-public:
-  void constant (const DT a);
-  void shuffle (const vector<int> &idx);
-  void softmax ();
 public:
   int rows () const { return shape.rows;  };
   int cols () const { return shape.cols;  };  // 稀疏
