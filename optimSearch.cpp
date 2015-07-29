@@ -8,7 +8,8 @@ bool OptimBase<XPU, DT>::line_search_backtracking (SparseBuffer<XPU, DT> &buffer
   const Tensor<XPU, DT> &wvec_b, int &evals, int maxEvals)
 { int count = 0;
   DT rho = 0;
-  const DT dec = 0.5, inc = 2.1;
+  const DT dec = 0.5;
+  const DT inc = 2.1;
   const DT c1 = 1e-4;
   const DT c2 = 0.9f;
 
@@ -31,19 +32,17 @@ bool OptimBase<XPU, DT>::line_search_backtracking (SparseBuffer<XPU, DT> &buffer
 
     ++count;
 
-    const bool armijo_violated = f_phi_alpha > f_phi_0 + c1 * step_length * d_phi_0 + 1e-6;
+    const bool armijo_violated = f_phi_alpha > f_phi_0 + c1 * step_length * d_phi_0;
 
     if (armijo_violated)
       rho = dec;
+    else if (d_phi_alpha <   c2 * d_phi_0)  // Wolfe condition
+      rho = inc;
+    else if (d_phi_alpha > - c2 * d_phi_0)  // strong Wolfe condition
+      rho = dec;
     else
-    { if (d_phi_alpha < c2 * d_phi_0)  // Wolfe condition
-        rho = inc;
-      else if (d_phi_alpha > - c2 * d_phi_0)  // strong Wolfe condition
-        rho = dec;
-      else
-      { loss_k = f_phi_alpha;
-        return true;
-      }
+    { loss_k = f_phi_alpha;
+      return true;
     }
 
     if (count >= maxEvals)
