@@ -4,10 +4,9 @@
 #include <omp.h>
 #include <stdio.h>
 #include <sys/types.h>
-#ifdef __CUDACC__
+
   #include <cuda.h>
   #include <driver_types.h>
-  #include <thrust/device_vector.h>
 //#include <cublas.h>
   #include <cublas_v2.h>
   #include <cusparse.h>
@@ -15,13 +14,12 @@
   #include <cudnn.h>
   #include <npp.h>
   #include <nppdefs.h>
-#else
+
   #include <math.h>
   #include <mkl.h>
   #include <mkl_cblas.h>
   #include <mkl_vsl.h>
   #include <mkl_vsl_functions.h>
-#endif
 
 #define CUDA_NUM_THREADS 1024
 #define CUDA_NUM_DEVICES 2
@@ -74,7 +72,6 @@
   _Pragma ("omp parallel for") \
   for (int i = XPU_GET_ELEMENT_OFFSET; i < n; i += XPU_GET_ELEMENT_STRIDE)
 
-
 void cuda_set_p2p (const int num_device);
 void cuda_del_p2p (const int num_device);
 void cuda_set_device (const int did);
@@ -87,14 +84,12 @@ public:
   void reset ();
   void release ();
   int  did_;
-#ifdef __CUDACC__
   cudaEvent_t       accept_ = nullptr;
   cudaStream_t      stream_ = nullptr;
   cublasHandle_t    cublas_ = nullptr;
   curandGenerator_t curand_ = nullptr;
   cudnnHandle_t     cudnn_  = nullptr;
   int cup2p_[CUDA_NUM_DEVICES];
-#endif
 };
 
 enum memcpy_t
@@ -109,7 +104,6 @@ void cuda_check (const T &status);
 void cuda_sync_check  (const char *msg);
 void cuda_async_check (const char *msg);
 
-#ifdef __CUDACC__
 enum cudaMemcpyKind get_memcpy_type (enum memcpy_t kind);
 void cuda_malloc (void **ptr, const size_t len);
 void cuda_memcpy       (void *dst, const void *src, const size_t size, enum memcpy_t kind);
@@ -117,6 +111,7 @@ void cuda_memcpy_async (void *dst, const void *src, const size_t size, enum memc
 void cuda_memcpy_peer       (void *dst, const void *src, const size_t size, const int dst_id, const int src_id);
 void cuda_memcpy_peer_async (void *dst, const void *src, const size_t size, const int dst_id, const int src_id);
 
+const char *cuda_get_status (const CUresult       &status);
 const char *cuda_get_status (const cudaError_t    &status);
 const char *cuda_get_status (const cublasStatus_t &status);
 const char *cuda_get_status (const curandStatus_t &status);
@@ -134,7 +129,6 @@ template <>
 struct SharedMemory <double>
 { __device__ double* getPointer() { extern __shared__ double s_double[];  return s_double;  }
 };
-#endif
 
 class GPU {
 public:
