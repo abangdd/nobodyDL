@@ -1,7 +1,6 @@
 #ifndef NNET_H_
 #define NNET_H_
 
-#include <cudnn.h>
 #include "tensor.h"
 #include "optimization.h"
 
@@ -43,9 +42,7 @@ class ParaLayer {
 public:
   explicit ParaLayer () : isLoad(false), isFixed(false) { };
   string get_layer_type ();
-#ifdef __CUDACC__
   void setPoolingDescriptor (cudnnPoolingDescriptor_t &desc);
-#endif
   int type;
   int idxs, idxd;
   int ksize, pad, stride;
@@ -76,10 +73,8 @@ public:
   virtual void show_model () { }
   virtual void get_model_info ();
   virtual void set_optimization (ParaOptim &paraWmat, ParaOptim &paraBias, vector<OptimBase<XPU, float>*> &optims) { }
-#ifdef __CUDACC__
   virtual cudaStream_t  get_calc_stream () const { return dnnctx[did_]->stream_;  }
   virtual cudnnHandle_t get_cunn_handle () const { return dnnctx[did_]->cudnn_;   }
-#endif
   ParaLayer pl_;
   int did_;
 };
