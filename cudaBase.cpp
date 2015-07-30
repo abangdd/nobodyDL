@@ -1,10 +1,11 @@
 #ifndef CUDA_BASE_
 #define CUDA_BASE_
 
-#include <glog/logging.h>
+#include <map>
+#include <vector>
 #include "../include/xpu.h"
 
-#ifdef __CUDACC__
+#ifndef __CUDACC__
 std::vector<XPUCtx*> dnnctx;
 
 void XPUCtx::release ()
@@ -36,7 +37,6 @@ void XPUCtx::reset ()
   cuda_check (cudnnSetStream  (cudnn_,  stream_));
   cuda_check (curandSetPseudoRandomGeneratorSeed (curand_, rand()));
 }
-
 
 
 void cuda_set_p2p (const int num_device)
@@ -96,15 +96,6 @@ enum cudaMemcpyKind get_memcpy_type (enum memcpy_t kind)
   }
 }
 
-void cuda_malloc (void **ptr, const size_t len)
-{
-#if CUDA_MANAGED
-  cuda_check (cudaMallocManaged (ptr, len, cudaMemAttachGlobal));
-#else
-  cuda_check (cudaMalloc (ptr, len));
-#endif
-}
-
 void cuda_memcpy       (void *dst, const void *src, const size_t size, enum memcpy_t kind)
 { cuda_check (cudaMemcpy      ((void*)dst, (const void*)src, size, get_memcpy_type(kind)));
 }
@@ -116,6 +107,16 @@ void cuda_memcpy_peer       (void *dst, const void *src, const size_t size, cons
 }
 void cuda_memcpy_peer_async (void *dst, const void *src, const size_t size, const int dst_id, const int src_id)
 { cuda_check (cudaMemcpyPeerAsync ((void*)dst, dst_id, (const void*)src, src_id, size, dnnctx[dst_id]->stream_));
+}
+
+#else
+void cuda_malloc (void **ptr, const size_t len)
+{
+#if CUDA_MANAGED
+  cuda_check (cudaMallocManaged (ptr, len, cudaMemAttachGlobal));
+#else
+  cuda_check (cudaMalloc (ptr, len));
+#endif
 }
 
 void *GPU::operator new(size_t len)
