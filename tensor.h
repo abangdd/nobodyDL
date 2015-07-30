@@ -11,7 +11,7 @@ class Shape {
 public:
   explicit Shape ();
   explicit Shape (const int a, const int b, const int c, const int d);
-  explicit Shape (const int a, const int b, const int c, const int d, const size_t nnz);
+  explicit Shape (const int a, const int b, const int c, const int d, const int e);
   bool operator == (const Shape &s) const;
   bool operator != (const Shape &s) const;
   void set_dims ();
@@ -24,8 +24,7 @@ public:
   void re_shape (const int a, const int b, const int c, const int d);
   void print ();
   int rows, cols, chls, nums;
-  int dims;
-  size_t size;
+  int size, dims;
 };
 
 class Patch {
@@ -170,16 +169,14 @@ public:
   int cols () const { return shape.cols;  }
   int chls () const { return shape.chls;  }
   int nums () const { return shape.nums;  }
-  size_t size   () const { return shape.size;  }
+  int size () const { return shape.size;  }
   size_t size_d () const { return shape.size * sizeof(DT);  }
   void print (const int cnt) const;
-#ifdef __CUDACC__
   cudaStream_t   get_copy_stream () const { return dnnctx[did_]->stream_;  }
   cudaStream_t   get_cmpt_stream () const { return dnnctx[did_]->stream_;  }
   cublasHandle_t get_blas_handle () const { return dnnctx[did_]->cublas_;  }
   void setTensor4dDescriptor (cudnnTensorDescriptor_t &desc);
   void setFilter4dDescriptor (cudnnFilterDescriptor_t &desc);
-#endif
 public:
   Shape shape;
   DT *dptr;
