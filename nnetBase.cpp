@@ -48,7 +48,6 @@ void ParaNNet::config (const libconfig::Config &cfg)
   &isLoad	= cfg.lookup ("model.isLoad"),
   &isFixed	= cfg.lookup ("model.isFixed"),
   &sigma	= cfg.lookup ("model.sigma"),
-  &bias		= cfg.lookup ("model.bias"),
   &random	= cfg.lookup ("model.rand_t");
 
   float epsW	= cfg.lookup ("optim.epsW");
@@ -78,7 +77,6 @@ void ParaNNet::config (const libconfig::Config &cfg)
     { pl.isLoad	= isLoad[j];
       pl.isFixed= isFixed[j];
       pl.sigma	= sigma[j];
-      pl.bias	= bias[j];
       pl.random	= random[j];
       j++;
     }
@@ -154,7 +152,7 @@ int ParaNNet::get_layer_type (const char *t)
 #ifdef __CUDACC__
 void ParaLayer::setPoolingDescriptor (cudnnPoolingDescriptor_t &desc)
 { cuda_check (cudnnSetPooling2dDescriptor (desc, pool == AVE ?
-    CUDNN_POOLING_AVERAGE : CUDNN_POOLING_MAX, ksize, ksize, pad, pad, stride, stride));
+    CUDNN_POOLING_AVERAGE_COUNT_EXCLUDE_PADDING : CUDNN_POOLING_MAX, ksize, ksize, pad, pad, stride, stride));
 }
 
 template <>
