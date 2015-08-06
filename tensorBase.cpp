@@ -14,10 +14,10 @@ Shape::Shape (const int a, const int b, const int c, const int d) :
   rows(a), cols(b), chls(c), nums(d)
 { set_dims ();
 }
-Shape::Shape (const int a, const int b, const int c, const int d, const size_t nnz) :
+Shape::Shape (const int a, const int b, const int c, const int d, const int e) :
   rows(a), cols(b), chls(c), nums(d)
 { set_dims ();
-  size = nnz;
+  size = e;
 }
 bool Shape::operator == (const Shape &s) const
 { return (rows == s.rows && cols == s.cols && chls == s.chls && nums == s.nums);
@@ -143,21 +143,6 @@ template void TensorGPUd::create (const Shape &s, const int did);
 #else
 template void TensorCPUf::create (const Shape &s, const int did);
 template void TensorCPUd::create (const Shape &s, const int did);
-#endif
-
-template <typename XPU, typename DT>
-void Tensor<XPU, DT>::clear ()
-{ Shape s;
-  shape = s;
-  mem_free ();
-  cherry = false;
-}
-#ifdef __CUDACC__
-template void TensorGPUf::clear ();
-template void TensorGPUd::clear ();
-#else
-template void TensorCPUf::clear ();
-template void TensorCPUd::clear ();
 #endif
 
 
