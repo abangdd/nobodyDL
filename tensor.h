@@ -90,7 +90,6 @@ public:
   ~Tensor ();
 public:
   void create (const Shape &s, const int did = 0);
-  void clear();
   void copy (const Tensor<GPU, DT> &in);
   void copy (const Tensor<CPU, DT> &in);
   Tensor<XPU, DT> segment (const int begin, const int end) const;
@@ -204,6 +203,7 @@ public:
   void read_image          (const TensorFormat &tf);
   void read_image_parallel (const TensorFormat &tf);
   void read (const ParaFileData &pd);
+  void set_image_lnums () { lnums_ = image_.img_list.size();  }
   void get_mean (const ParaFileData &pd, const TensorFormat &tf);
   void sampling (const ParaFileData &pd, const TensorFormat &tf, const int keepdim, Tensor<CPU, DT> &sample);
   void evaluate (DT &err);
