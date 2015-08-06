@@ -180,8 +180,8 @@ void NNetModel<XPU>::train ()
   for (int did = para_.min_device; did <= para_.max_device; ++did)
   { train_[did].image_.init (dataIm_, did - para_.min_device, para_.num_device);
      test_[did].image_.init (para_.dataTest_);
-    train_[did].lnums_ = train_[did].image_.img_list.size();
-     test_[did].lnums_ =  test_[did].image_.img_list.size();
+    train_[did].set_image_lnums ();
+     test_[did].set_image_lnums ();
   }
 
   for (int r = para_.stt_round; r < para_.end_round; ++r)
