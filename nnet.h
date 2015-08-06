@@ -8,9 +8,6 @@
   #define USE_CUDNN true
 #endif
 
-using std::max;
-using std::min;
-
 enum neuron_t
 { RELU		= 1,
   SIGMOID	= 2,
@@ -52,7 +49,7 @@ public:
   int pool;
   int loss;
   bool isLoad, isFixed;
-  float sigma, bias, dropout;
+  float sigma, dropout;
 };
 
 
@@ -136,15 +133,17 @@ private:
   Tensor<XPU, float> tsrc_;
   Tensor<XPU, float> tcol_;
   Tensor<XPU, float> tdst_;
-  Tensor<XPU, float> mwmat_, nwmat_, iwmat_;
+  Tensor<XPU, float> mwmat_, nwmat_;
   int chls_, nums_, flts_, grps_;
   cudnnTensorDescriptor_t srcDesc_, dstDesc_;
   cudnnTensorDescriptor_t biasDesc_;
   cudnnFilterDescriptor_t wmatDesc_;
   cudnnConvolutionDescriptor_t convDesc_;
-  cudnnConvolutionFwdAlgo_t algo_;
-  size_t worksize;
-  void *workspace;
+  cudnnConvolutionFwdAlgo_t       fwdAlgo;
+  cudnnConvolutionBwdDataAlgo_t   bwdDataAlgo;
+  cudnnConvolutionBwdFilterAlgo_t bwdFltrAlgo;
+  size_t fwdSize,  bwdDataSize,  bwdFltrSize;
+  void  *fwdAddr, *bwdDataAddr, *bwdFltrAddr;
 };
 
 template <typename XPU>
@@ -159,7 +158,7 @@ protected:
 private:
   Tensor<XPU, float> tsrc_;
   Tensor<XPU, float> tdst_;
-  Tensor<XPU, float> mwmat_, nwmat_, iwmat_;
+  Tensor<XPU, float> mwmat_, nwmat_;
   int dims_, nums_, flts_;
 };
 
