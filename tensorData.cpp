@@ -18,7 +18,7 @@ TensorFormat::TensorFormat (const libconfig::Config &cfg) : isTrain(true)
 
 template <typename XPU, typename DT>
 void Tensor<XPU, DT>::get_mean (Tensor<XPU, DT> &mean) const
-{ mean.create ((*this)[0].shape);  mean.mem_set (0);
+{ mean.mem_set (0);
   for (int i = 0; i < nums(); ++i)
     mean.blas_axpy ((*this)[i], 1.);
   mean.blas_scal (1./nums());
@@ -84,8 +84,8 @@ template void DataBuffer<float>::create (const TensorFormat &tf, const int did);
 
 template <typename DT>
 void DataBuffer<DT>::read_tensor (const ParaFileData &pd)
-{  data_.clear ();   data_.load (pd. data, did_);
-  label_.clear ();  label_.load (pd.label, did_);
+{  data_.load (pd. data, did_);
+  label_.load (pd.label, did_);
   pred_.create (label_.shape, did_);
   lnums_ = cnums_ = data_.nums();
 }
@@ -137,19 +137,20 @@ template void DataBuffer<float>::read (const ParaFileData &pd);
 
 template <typename DT>
 void DataBuffer<DT>::get_mean (const ParaFileData &pd, const TensorFormat &tf)
-{ Tensor<CPU, DT> mean_b;
+{ Tensor<CPU, DT> mean_b;  mean_b.create (data_[0].shape);
   Tensor<CPU, DT> mean_g;  mean_g.create (data_[0].shape);  mean_g.mem_set (0);
 
   const int count = lnums_ / data_.nums();
   for (int c = 0; c < count; ++c)
   { if (pd.type == "image")
-      read_image (tf);
+      read_image_parallel (tf);
     data_. get_mean  (mean_b);
     mean_g.blas_axpy (mean_b, 1.);
   }
 
   mean_g.blas_scal (1./count);
   mean_g.save (pd.mean);
+//mean_g.print (112);
 }
 template void DataBuffer<float>::get_mean (const ParaFileData &pd, const TensorFormat &tf);
 
