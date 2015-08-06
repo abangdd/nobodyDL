@@ -4,50 +4,20 @@
 #include <float.h>
 #include "../include/nnet.h"
 
-#define LEAKY -0.1
+#define LEAKY 0.1
 
-// TODO exp溢出
 template <typename DT>
 XPU_KERNEL(NeuronForward) (
-  const int num_kernels, const DT* src_data, DT* dst_data, const int neuron)
-{ switch (neuron)
-  { case SIGMOID:
-      kernel_for (i, num_kernels)
-        dst_data[i] = (DT)1. / ((DT)1. + exp (-src_data[i]));
-      break;
-    case TANH:
-      kernel_for (i, num_kernels)
-      { const DT exp2x = exp (2 * src_data[i]);
-        dst_data[i] = (exp2x - (DT)1.) / (exp2x + (DT)1.);
-      }
-      break;
-    default:
-      kernel_for (i, num_kernels)
-        dst_data[i] = src_data[i] * (src_data[i] >= (DT)0. ? (DT)1. : (DT)LEAKY);
-  }
+  const int num_kernels, const DT* src_data, DT* dst_data)
+{ kernel_for (i, num_kernels)
+    dst_data[i] = src_data[i] * (src_data[i] >= (DT)0. ? (DT)1. : (DT)LEAKY);
 };
 
 template <typename DT>
 XPU_KERNEL(NeuronBackward) (
-  const int num_kernels, DT* src_diff, const DT* dst_diff, const int neuron)
-{ switch (neuron)
-  { case SIGMOID:
-      kernel_for (i, num_kernels)
-      { const DT sigmoid_x = (DT)1. / ((DT)1. + exp (-src_diff[i]));
-        src_diff[i] = dst_diff[i] * sigmoid_x * (1 - sigmoid_x);
-      }
-      break;
-    case TANH:
-      kernel_for (i, num_kernels)
-      { const DT exp2x = exp (2 * src_diff[i]);
-        const DT tanhx = (exp2x - (DT)1.) / (exp2x + (DT)1.);
-        src_diff[i] = dst_diff[i] * (1 - tanhx * tanhx);
-      }
-      break;
-    default:
-      kernel_for (i, num_kernels)
-        src_diff[i] = dst_diff[i] * (src_diff[i] >= (DT)0. ? (DT)1. : (DT)LEAKY);
-  }
+  const int num_kernels, DT* src_diff, const DT* dst_diff)
+{ kernel_for (i, num_kernels)
+    src_diff[i] = dst_diff[i] * (src_diff[i] >= (DT)0. ? (DT)1. : (DT)LEAKY);
 };
 
 
@@ -68,7 +38,7 @@ LAYER_FORWARD (LayerNeuron)
 #else
   const int N = dst_.size();
   XPU_KERNEL_LAUNCH (NeuronForward,  cuda_get_blocks(N), CUDA_NUM_THREADS, 0, CUDNN_STREAM,
-    N, src_.dptr, dst_.dptr, pl_.neuron);
+    N, src_.dptr, dst_.dptr);
   cuda_sync_check ("NeuronForward");
 #endif
 }
@@ -84,7 +54,7 @@ LAYER_BACKPROP (LayerNeuron)
   const int N = dst_.size();
   if (is_prop_grad)
   XPU_KERNEL_LAUNCH (NeuronBackward, cuda_get_blocks(N), CUDA_NUM_THREADS, 0, CUDNN_STREAM,
-    N, src_.dptr, dst_.dptr, pl_.neuron);
+    N, src_.dptr, dst_.dptr);
   cuda_sync_check ("NeuronBackward");
 #endif
 }
