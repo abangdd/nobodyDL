@@ -1,8 +1,6 @@
 #ifndef CUDA_BASE_
 #define CUDA_BASE_
 
-#include <map>
-#include <vector>
 #include "../include/xpu.h"
 
 #ifndef __CUDACC__
@@ -37,7 +35,6 @@ void XPUCtx::reset ()
   cuda_check (cudnnSetStream  (cudnn_,  stream_));
   cuda_check (curandSetPseudoRandomGeneratorSeed (curand_, rand()));
 }
-
 
 void cuda_set_p2p (const int num_device)
 { for (int did = 0; did < num_device; ++did)
@@ -81,26 +78,11 @@ int cuda_get_blocks (const int N)
 { return (N + CUDA_NUM_THREADS - 1) / CUDA_NUM_THREADS;
 }
 
-enum cudaMemcpyKind get_memcpy_type (enum memcpy_t kind)
-{ switch (kind)
-  { case CPU2GPU:
-      return cudaMemcpyHostToDevice;
-    case GPU2CPU:
-      return cudaMemcpyDeviceToHost;
-    case CPU2CPU:
-      return cudaMemcpyHostToHost;
-    case GPU2GPU:
-      return cudaMemcpyDeviceToDevice;
-    default:
-      return cudaMemcpyHostToDevice;
-  }
+void cuda_memcpy       (void *dst, const void *src, const size_t size, cudaMemcpyKind kind)
+{ cuda_check (cudaMemcpy      ((void*)dst, (const void*)src, size, kind));
 }
-
-void cuda_memcpy       (void *dst, const void *src, const size_t size, enum memcpy_t kind)
-{ cuda_check (cudaMemcpy      ((void*)dst, (const void*)src, size, get_memcpy_type(kind)));
-}
-void cuda_memcpy_async (void *dst, const void *src, const size_t size, enum memcpy_t kind, cudaStream_t stream)
-{ cuda_check (cudaMemcpyAsync ((void*)dst, (const void*)src, size, get_memcpy_type(kind), stream));
+void cuda_memcpy_async (void *dst, const void *src, const size_t size, cudaMemcpyKind kind, cudaStream_t stream)
+{ cuda_check (cudaMemcpyAsync ((void*)dst, (const void*)src, size, kind, stream));
 }
 void cuda_memcpy_peer       (void *dst, const void *src, const size_t size, const int dst_id, const int src_id)
 { cuda_check (cudaMemcpyPeer      ((void*)dst, dst_id, (const void*)src, src_id, size));
