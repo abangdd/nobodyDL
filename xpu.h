@@ -4,7 +4,7 @@
 #include <omp.h>
 #include <stdio.h>
 #include <sys/types.h>
-
+#include <vector>
   #include <cuda.h>
   #include <driver_types.h>
 //#include <cublas.h>
@@ -72,6 +72,8 @@
   _Pragma ("omp parallel for") \
   for (int i = XPU_GET_ELEMENT_OFFSET; i < n; i += XPU_GET_ELEMENT_STRIDE)
 
+void cuda_nervana_load (const char* const base_path);
+void cuda_nervana_unload ();
 void cuda_set_p2p (const int num_device);
 void cuda_del_p2p (const int num_device);
 void cuda_set_device (const int did);
@@ -92,30 +94,21 @@ public:
   int cup2p_[CUDA_NUM_DEVICES];
 };
 
-enum memcpy_t
-{ CPU2GPU	= 1,
-  GPU2CPU	= 2,
-  CPU2CPU	= 3,
-  GPU2GPU	= 4
-};
+#define CPU2GPU cudaMemcpyHostToDevice
+#define GPU2CPU cudaMemcpyDeviceToHost
+#define CPU2CPU cudaMemcpyHostToHost
+#define GPU2GPU cudaMemcpyDeviceToDevice
 
 template <typename T>
 void cuda_check (const T &status);
 void cuda_sync_check  (const char *msg);
 void cuda_async_check (const char *msg);
 
-enum cudaMemcpyKind get_memcpy_type (enum memcpy_t kind);
 void cuda_malloc (void **ptr, const size_t len);
-void cuda_memcpy       (void *dst, const void *src, const size_t size, enum memcpy_t kind);
-void cuda_memcpy_async (void *dst, const void *src, const size_t size, enum memcpy_t kind, cudaStream_t stream);
+void cuda_memcpy       (void *dst, const void *src, const size_t size, cudaMemcpyKind kind);
+void cuda_memcpy_async (void *dst, const void *src, const size_t size, cudaMemcpyKind kind, cudaStream_t stream);
 void cuda_memcpy_peer       (void *dst, const void *src, const size_t size, const int dst_id, const int src_id);
 void cuda_memcpy_peer_async (void *dst, const void *src, const size_t size, const int dst_id, const int src_id);
-
-const char *cuda_get_status (const CUresult       &status);
-const char *cuda_get_status (const cudaError_t    &status);
-const char *cuda_get_status (const cublasStatus_t &status);
-const char *cuda_get_status (const curandStatus_t &status);
-const char *cuda_get_status (const NppStatus      &status);
 
 template <typename DT>
 struct SharedMemory
