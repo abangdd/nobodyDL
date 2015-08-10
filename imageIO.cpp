@@ -6,25 +6,20 @@
 #include "../include/image.h"
 #include "../include/tensor.h"
 
-using std::cout;
-using std::endl;
-
-
-
 template <>
-void TensorCPUf::show_image ()
+void TensorCPUf::show_image (const int numc)
 { shape.print ();
   Mat dst;
   if (chls() != 3)
-  { int numy = round (sqrt (nums() * chls()) * 3 / 4.);  numy = std::min (numy, nums());
-    int numx = round (sqrt (nums() / chls()) * 4 / 3.);  numx = std::max (numx, 1);
+  { int numy = round (sqrt (nums() * numc) * 3 / 4.);  numy = std::min (numy, nums());
+    int numx = round (sqrt (nums() / numc) * 4 / 3.);  numx = std::max (numx, 1);
 
     const int numi = std::min (numy*numx, nums());
-    dst.create (rows()*numy, cols()*chls()*numx, CV_32F);  //dst = cv::Scalar::all(0);
+    dst.create (rows()*numy, cols()*numc*numx, CV_32F);  //dst = cv::Scalar::all(0);
     for (int i = 0; i < numi; ++i)
-      for (int j = 0; j < chls(); ++j)
-      { const int x = cols() * (i%numx*chls()+j);
-        const int y = rows() * (i/numx);
+      for (int j = 0; j < numc; ++j)
+      { int x = cols() * (i%numx*numc+j);
+        int y = rows() * (i/numx);
         Mat roi (dst, cv::Rect (x, y, cols(), rows()));
         for (int k = 0; k < rows(); ++k)
           (*this)[i][j][k].memcpy_to_cpu (roi.ptr<float>(k));
@@ -35,10 +30,10 @@ void TensorCPUf::show_image ()
     int numx = round (sqrt (nums()) * 4 / 3.);  numx = std::max (numx, 1);
 
     const int numi = std::min (numy*numx, nums());
-    dst.create (rows()*numy, cols()*numx, CV_32FC3);  //dst = cv::Scalar::all(0);
+    dst.create (rows()*numy, cols()*numx, CV_32FC3);
     for (int i = 0; i < numi; ++i)
-    { const int x = cols() * (i%numx);
-      const int y = rows() * (i/numx);
+    { int x = cols() * (i%numx);
+      int y = rows() * (i/numx);
       Mat roi (dst, cv::Rect (x, y, cols(), rows()));
       for (int j = 0; j < chls(); ++j)
         for (int k = 0; k < rows(); ++k)
@@ -54,10 +49,10 @@ void TensorCPUf::show_image ()
 }
 
 template <>
-void TensorGPUf::show_image ()
+void TensorGPUf::show_image (const int numc)
 { TensorCPUf im;  im.create (shape);
   im.copy (*this);
-  im.show_image();
+  im.show_image (numc);
 }
 
 void pre_process (Mat &src, const TensorFormat &tf, const TensorCPUf &mean, const TensorCPUf &noise)
@@ -70,14 +65,6 @@ void pre_process (Mat &src, const TensorFormat &tf, const TensorCPUf &mean, cons
 //  src += cv::Scalar (noise.dptr[0], noise.dptr[1], noise.dptr[2]);
   if (tf.isTrain && rand() % 2)
     flip (src, src, 1);
-/*
-  { float angle = -rand() % 21 + 10;
-    float scale = 1.f;
-    cv::Point2f center (src.cols/2, src.rows/2);
-    Mat rotateMat = cv::getRotationMatrix2D (center, angle, scale);
-    cv::warpAffine (src, src, rotateMat, src.size(), cv::INTER_LINEAR, cv::BORDER_REFLECT_101);
-  }
-*/
 }
 
 void mat_2tensor (const Mat &src, TensorCPUf &dst)
@@ -103,11 +90,11 @@ void TensorCPUf::read_image_data (const TensorFormat &tf, const string &file, co
     return;
   }
 
-  float     crop_ratio= 1.f;
-  const int crop_rows = tf.isTrain ? rows() * crop_ratio : rows();
-  const int crop_cols = tf.isTrain ? cols() * crop_ratio : cols();
-  const int  gap_rows = src.rows - crop_rows;
-  const int  gap_cols = src.cols - crop_cols;
+  float crop_ratio = 1.f;
+  int crop_rows = tf.isTrain ? rows() * crop_ratio : rows();
+  int crop_cols = tf.isTrain ? cols() * crop_ratio : cols();
+  int  gap_rows = src.rows - crop_rows;
+  int  gap_cols = src.cols - crop_cols;
   int y0 = gap_rows / 2;
   int x0 = gap_cols / 2;
   if (tf.isTrain)
@@ -150,19 +137,23 @@ void TensorCPUf::read_image_label (const DataImage &dimg, const string &file, co
 
 
 
-void image_resize (const ParaImCvt &para, const string &file_src, const string &file_dst)
-{ Mat im_src = cv::imread (file_src, 1);
-  if (!im_src.data)
-  { LOG (WARNING) << "\timage is invalid\t" << file_src;
+void image_resize (const ParaImCvt &para, const string &fsrc, const string &fdst)
+{ Mat isrc = cv::imread (fsrc, 1);
+  if (!isrc.data)
+  { LOG (WARNING) << "\timage is invalid\t" << fsrc;
     return;
   }
-  const int rows = im_src.rows, cols = im_src.cols;
-  const float minDim = std::min (para.rows, para.cols);
-  const int adaptiveRows = rows >= cols ? round (minDim * rows / cols) : minDim;
-  const int adaptiveCols = cols >= rows ? round (minDim * cols / rows) : minDim;
-  Mat im_dst;
-  cv::resize (im_src, im_dst, cv::Size(adaptiveCols, adaptiveRows), 0, 0, CV_INTER_AREA);
-  cv::imwrite(file_dst, im_dst);
+  int rows = isrc.rows, cols = isrc.cols;
+  float minDim = std::min (para.rows, para.cols);
+  float aRatio = (float)rows / cols;
+  //if (aRatio > 1.33f) aRatio = 1.33f;
+  //if (aRatio < 0.75f) aRatio = 0.75f;
+  int adaRows = rows >= cols ? round (minDim * aRatio) : minDim;
+  int adaCols = cols >= rows ? round (minDim / aRatio) : minDim;
+  int interpolation = (rows < para.rows || cols < para.cols) ? CV_INTER_CUBIC : CV_INTER_AREA;
+  Mat idst;
+  cv::resize (isrc, idst, cv::Size(adaCols, adaRows), 0, 0, interpolation);
+  cv::imwrite(fdst, idst);
 }
 
 void image_resize (const ParaImCvt &para, const string &folder_src, const string &folder_dst, const string &suffix)
@@ -173,7 +164,7 @@ void image_resize (const ParaImCvt &para, const string &folder_src, const string
     if (access (dstList[i].c_str(), F_OK) != 0)
       CHECK (mkdir (dstList[i].c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == 0);
 
-    cout << "image resizing\t" << srcList[i] << "\t" << dstList[i] << endl;
+    LOG (INFO) << "\t" << srcList[i] << "\t" << dstList[i];
     vector<string> fileList;  get_file_list (srcList[i], suffix, fileList);
 #pragma omp parallel for
     for (size_t j = 0; j < fileList.size(); j++)
@@ -191,7 +182,7 @@ int readImage (const libconfig::Config &cfg, const string path, const bool readM
   string maskpath = labelF + "/" + filename + ".s" + suffix;
 
   if (suffix == ".jpg")
-  { src  = cv::imread (path.c_str());  cout<<path.c_str()<<endl;  }
+  { src  = cv::imread (path.c_str());  std::cout<<path.c_str()<<std::endl;  }
   if (readMask)  mask = cv::imread (maskpath.c_str());
   else           mask = Mat::zeros (src.size(), CV_8U);
 
@@ -200,9 +191,9 @@ int readImage (const libconfig::Config &cfg, const string path, const bool readM
     return 1;
 
   rows = src.rows,  cols = src.cols;
-  const int adaptiveRows = cols > rows ? (fixrows * rows / cols / 2 * 2) : fixrows;
-  const int adaptiveCols = rows > cols ? (fixcols * cols / rows / 2 * 2) : fixcols;
-  cv::Size size (adaptiveCols, adaptiveRows);
+  int adaRows = cols > rows ? (fixrows * rows / cols / 2 * 2) : fixrows;
+  int adaCols = rows > cols ? (fixcols * cols / rows / 2 * 2) : fixcols;
+  cv::Size size (adaCols, adaRows);
   resize (src, src, size, cv::INTER_AREA);
   resize (mask,mask,size, cv::INTER_AREA);
 
