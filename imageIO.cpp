@@ -172,32 +172,4 @@ void image_resize (const ParaImCvt &para, const string &folder_src, const string
   }
 }
 
-int readImage (const libconfig::Config &cfg, const string path, const bool readMask, Mat &src, Mat &mask)
-{ const int fixrows = cfg.lookup ("readImage.rows");
-  const int fixcols = cfg.lookup ("readImage.cols");
-  const string suffix = cfg.lookup ("readImage.suffix");
-  const string labelF = cfg.lookup ("data.pathLabel");
-
-  string filename = path.substr (path.rfind("/")+1, path.rfind(suffix)-path.rfind("/")-1);  // 文件名 不含路径和后缀
-  string maskpath = labelF + "/" + filename + ".s" + suffix;
-
-  if (suffix == ".jpg")
-  { src  = cv::imread (path.c_str());  std::cout<<path.c_str()<<std::endl;  }
-  if (readMask)  mask = cv::imread (maskpath.c_str());
-  else           mask = Mat::zeros (src.size(), CV_8U);
-
-  int rows = src.rows,  cols = src.cols;
-  if (rows < 64 || cols < 64)
-    return 1;
-
-  rows = src.rows,  cols = src.cols;
-  int adaRows = cols > rows ? (fixrows * rows / cols / 2 * 2) : fixrows;
-  int adaCols = rows > cols ? (fixcols * cols / rows / 2 * 2) : fixcols;
-  cv::Size size (adaCols, adaRows);
-  resize (src, src, size, cv::INTER_AREA);
-  resize (mask,mask,size, cv::INTER_AREA);
-
-  return 0;
-}
-
 #endif
