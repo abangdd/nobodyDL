@@ -185,7 +185,8 @@ template LayerBase<CPU>* create_layer (ParaLayer &pl, const int did, TensorCPUf 
 
 template <typename XPU>
 void LayerBase<XPU>::get_model_info ()
-{ LOG (INFO) << "\tModel initializing\t" << pl_.get_layer_type() << "\t" << pl_.sigma;
+{ char pszstr[8];  sprintf (pszstr, "%.3f", pl_.sigma);
+  LOG (INFO) << "\tModel initialized\t" << pl_.get_layer_type() << "\t" << atof (pszstr);
 }
 template void LayerBase<GPU>::get_model_info ();
 template void LayerBase<CPU>::get_model_info ();
