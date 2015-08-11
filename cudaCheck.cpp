@@ -32,7 +32,7 @@ template void cuda_check (const cudnnStatus_t    &status);
 template void cuda_check (const NppStatus        &status);
 
 inline const char *cuda_get_status (const CUresult    &status)
-{ const char** pStr = (const char**)calloc(128, sizeof(char*));
+{ const char** pStr = (const char**)calloc(128, sizeof(char*));  // TODO
   cuGetErrorName (status, pStr);
   return *pStr;
 }
