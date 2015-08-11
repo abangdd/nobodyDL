@@ -55,6 +55,14 @@ void TensorGPUf::show_image (const int numc)
   im.show_image (numc);
 }
 
+void bgr_normalize (Mat &src)
+{ vector<Mat> chlVtr;
+  split (src, chlVtr);
+  for (int i = 0; i < 3; i++)
+    normalize (chlVtr[i], chlVtr[i], 0, 255, cv::NORM_MINMAX);
+  merge (chlVtr, src);
+}
+
 void pre_process (Mat &src, const TensorFormat &tf, const TensorCPUf &mean)
 { src.convertTo (src, CV_32FC3, 1.f/255);
   mkl_set_num_threads_local (1);
