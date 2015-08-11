@@ -7,7 +7,6 @@
 #include <vector>
   #include <cuda.h>
   #include <driver_types.h>
-//#include <cublas.h>
   #include <cublas_v2.h>
   #include <cusparse.h>
   #include <curand.h>
@@ -93,11 +92,6 @@ public:
   cudnnHandle_t     cudnn_  = nullptr;
   int cup2p_[CUDA_NUM_DEVICES];
 };
-
-#define CPU2GPU cudaMemcpyHostToDevice
-#define GPU2CPU cudaMemcpyDeviceToHost
-#define CPU2CPU cudaMemcpyHostToHost
-#define GPU2GPU cudaMemcpyDeviceToDevice
 
 template <typename T>
 void cuda_check (const T &status);
