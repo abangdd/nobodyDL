@@ -52,8 +52,6 @@ enum rand_t
   UNIFORM	= 2
 };
 
-void rand_check (const int status);
-
 template <typename XPU>
 class Random {
 public:
@@ -68,7 +66,6 @@ private:
 };
 
 
-class DataImage;
 
 template <typename XPU, typename DT>
 class SparseTensor;
@@ -107,7 +104,7 @@ public:
 public:
   void save (const string file);
   void load (const string file, const int did);
-  void show_image ();
+  void show_image (const int numc = 3);
   void read_image_data (const TensorFormat &tf, const string &file, const int idx,
     const Tensor<XPU, DT> &mean, const Tensor<XPU, DT> &eigvec, const Tensor<XPU, DT> &eigval, const Random<XPU> &random);
   void read_image_label (const DataImage &dimg, const string &file, const int idx);
