@@ -225,6 +225,11 @@ template void TensorCPUd::mem_set (const unsigned char a);
 
 
 
+#define CPU2GPU cudaMemcpyHostToDevice
+#define GPU2CPU cudaMemcpyDeviceToHost
+#define CPU2CPU cudaMemcpyHostToHost
+#define GPU2GPU cudaMemcpyDeviceToDevice
+
 #ifdef __CUDACC__
 template <>
 void TensorGPUf::memcpy_from_gpu (void *ptr)
@@ -305,51 +310,5 @@ template void TensorCPUf::copy (const TensorCPUf &in);
 template void TensorCPUd::copy (const TensorCPUd &in);
 #endif
 
-
-
-template <typename XPU, typename DT>
-void Tensor<XPU, DT>::shuffle (const vector<int> &idx)
-{ Tensor<XPU, DT> temp;
-  temp.create (shape);
-  for (int i = 0; i < nums(); ++ i)
-    temp[i].copy ((*this)[idx[i]]);
-  copy (temp);
-  temp.mem_free ();
-}
-#ifdef __CUDACC__
-template void TensorGPUf::shuffle (const vector<int> &idx);
-#else
-template void TensorCPUf::shuffle (const vector<int> &idx);
-#endif
-
-template <typename XPU, typename DT>
-void Tensor<XPU, DT>::softmax ()
-{ const DT maxval = reduce_max ();
-#pragma omp parallel for
-  for (int i = 0; i < size(); ++i)
-    dptr[i] = exp (dptr[i] - maxval);
-  const DT sumval = reduce_sum ();
-    blas_scal ((DT)1./sumval);
-}
-#ifndef __CUDACC__
-template void TensorCPUf::softmax ();
-template void TensorCPUd::softmax ();
-#endif
-
-
-
-template <typename XPU, typename DT>
-void Tensor<XPU, DT>::print (const int cnt) const
-{ for (int i = 0; i < cnt && i < size(); i++)
-    printf ("%.4f\t", dptr[i]);
-  printf ("\n");
-}
-#ifdef __CUDACC__
-template void TensorGPUf::print (const int cnt) const;
-template void TensorGPUd::print (const int cnt) const;
-#else
-template void TensorCPUf::print (const int cnt) const;
-template void TensorCPUd::print (const int cnt) const;
-#endif
 
 #endif
