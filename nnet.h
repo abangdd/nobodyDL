@@ -72,7 +72,7 @@ public:
   virtual void set_optimization (ParaOptim &paraWmat, ParaOptim &paraBias, vector<OptimBase<XPU, float>*> &optims) { }
   virtual cudaStream_t  get_calc_stream () const { return dnnctx[did_]->stream_;  }
   virtual cudnnHandle_t get_cunn_handle () const { return dnnctx[did_]->cudnn_;   }
-  ParaLayer pl_;
+  ParaLayer &pl_;
   int did_;
 };
 
@@ -105,18 +105,17 @@ public:
 #define CUDNN_STREAM  LayerBase<XPU>::get_calc_stream()
 
 #define LAYER_MEMBER \
-  ParaLayer pl_; \
+  ParaLayer &pl_; \
   int did_; \
-  Tensor<XPU, float> &src_; \
-  Tensor<XPU, float> &dst_; \
+  Tensor<XPU, float> &src_, tsrc_; \
+  Tensor<XPU, float> &dst_, tdst_; \
   Random<XPU> rand_; \
   float alpha, beta
 
 #define MODEL_MEMBER \
   Tensor<XPU, float> drep_,  nrep_; \
   Tensor<XPU, float> wmat_, gwmat_; \
-  Tensor<XPU, float> bias_, gbias_; \
-  Tensor<XPU, float> scal_, gscal_
+  Tensor<XPU, float> bias_, gbias_
 
 template <typename XPU>
 class LayerConvolution : public LayerBase<XPU> {
@@ -130,9 +129,7 @@ public:
   LAYER_MEMBER;
   MODEL_MEMBER;
 private:
-  Tensor<XPU, float> tsrc_;
   Tensor<XPU, float> tcol_;
-  Tensor<XPU, float> tdst_;
   Tensor<XPU, float> mwmat_, nwmat_;
   int chls_, nums_, flts_, grps_;
   cudnnTensorDescriptor_t srcDesc_, dstDesc_;
@@ -156,8 +153,6 @@ protected:
   LAYER_MEMBER;
   MODEL_MEMBER;
 private:
-  Tensor<XPU, float> tsrc_;
-  Tensor<XPU, float> tdst_;
   Tensor<XPU, float> mwmat_, nwmat_;
   int dims_, nums_, flts_;
 };
@@ -182,8 +177,6 @@ public:
   Pool  pool_;
   LAYER_MEMBER;
 private:
-  Tensor<XPU, float> bsrc_;  // backup
-  Tensor<XPU, float> bdst_;  // backup
   cudnnTensorDescriptor_t srcDesc_, dstDesc_;
   cudnnPoolingDescriptor_t  poolDesc_;
 };
