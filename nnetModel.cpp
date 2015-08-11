@@ -22,7 +22,7 @@ void NNetModel<XPU>::init ()
   
     layers_[did].resize (para_.num_layers);
     for (int i = 0; i < para_.num_layers; ++i)
-    { ParaLayer pl = para_.paraLayer_[i];
+    { ParaLayer &pl = para_.paraLayer_[i];
       LOG (INFO) << "\tLayer initializing\t" << para_.paraLayer_[i].get_layer_type();
       layers_[did][i] = create_layer (pl, did, nodes_[did][pl.idxs], nodes_[did][pl.idxd]);
     }
@@ -32,14 +32,15 @@ void NNetModel<XPU>::init ()
   
     for (int i = 0, j = 0; i < para_.num_layers; ++i)
       if (para_.paraLayer_[i].type == kConvolution || para_.paraLayer_[i].type == kFullConn)
-      { layers_[did][i]->get_model_info ();
-        layers_[did][i]->init_model ();
-        para_.paraWmat_[j].get_optim_info ();
-      //para_.paraBias_[j].get_optim_info ();
+      { layers_[did][i]->init_model ();
         layers_[did][i]->set_optimization (para_.paraWmat_[j], para_.paraBias_[j], optims_[did]);
+        layers_[did][i]->get_model_info ();
         j++;
       }
-  
+
+    para_.paraWmat_[para_.num_optims/2 - 1].get_optim_info ();
+    para_.paraBias_[para_.num_optims/2 - 1].get_optim_info ();
+
     batch_[did].data_  = nodes_[did][0];
     batch_[did].pred_  = nodes_[did][para_.num_nodes - 2];
     batch_[did].label_ = nodes_[did][para_.num_nodes - 1];
