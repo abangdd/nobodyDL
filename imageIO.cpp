@@ -55,7 +55,7 @@ void TensorGPUf::show_image (const int numc)
   im.show_image (numc);
 }
 
-void pre_process (Mat &src, const TensorFormat &tf, const TensorCPUf &mean, const TensorCPUf &noise)
+void pre_process (Mat &src, const TensorFormat &tf, const TensorCPUf &mean)
 { src.convertTo (src, CV_32FC3, 1.f/255);
   mkl_set_num_threads_local (1);
   if (mean.dptr)
@@ -108,7 +108,7 @@ void TensorCPUf::read_image_data (const TensorFormat &tf, const string &file, co
   { if (crop_ratio < 1)  cv::resize (crop, crop, cv::Size(cols(), rows()), 0, 0, CV_INTER_LINEAR);
     if (crop_ratio > 1)  cv::resize (crop, crop, cv::Size(cols(), rows()), 0, 0, CV_INTER_AREA);
   }
-
+/*
   TensorCPUf noise, coeff;
   if (tf.isTrain)
   { noise.create (eigval.shape);
@@ -117,9 +117,9 @@ void TensorCPUf::read_image_data (const TensorFormat &tf, const string &file, co
     coeff.blas_vmul (coeff, eigval);
     noise.blas_gemv (false, eigvec, coeff, 0.1, 0.f);
   }
-
+*/
   TensorCPUf dst = (*this)[idx];
-  pre_process (crop, tf, mean, noise);
+  pre_process (crop, tf, mean);
   mat_2tensor (crop, dst);
 }
 
