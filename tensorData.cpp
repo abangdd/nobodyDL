@@ -100,19 +100,18 @@ void DataBuffer<DT>::read_stats  (const ParaFileData &pd)
 template void DataBuffer<float>::read_stats  (const ParaFileData &pd);
 
 template <>
-void DataBuffer<float>::read_image          (const TensorFormat &format)
+void DataBuffer<float>::read_image_thread   (const TensorFormat &format)
 { if (curr_no_ + data_.nums() > lnums_)
     curr_no_ = 0;
   cnums_ = 0;
-//#pragma omp parallel for
   for (int i = 0; i < data_.nums(); ++i)
   { const int idx = curr_no_ + i;
-     data_.read_image_data  (format, image_.img_list[idx], i, mean_, eigvec_, eigval_, rand_);
-    label_.read_image_label (image_, image_.img_list[idx], i);
+    const string name = image_.imgList[idx];
+     data_.read_image_data  (format, image_.image_path+name, i, mean_, eigvec_, eigval_, rand_);
+    label_.read_image_label (image_, image_.image_path+name, i);
     cnums_ += 1;
   }
   curr_no_ += data_.nums();
-//LOG (INFO) << "\timage read\tnumImages = " << data_.nums();
 }
 
 template <>
@@ -122,7 +121,8 @@ void DataBuffer<float>::read_image_parallel (const TensorFormat &format)
 #pragma omp parallel for
   for (int i = 0; i < data_.nums(); ++i)
   { const int idx = curr_no_ + i;
-     data_.read_image_data  (format, image_.img_list[idx], i, mean_, eigvec_, eigval_, rand_);
+    const string name = image_.imgList[idx];
+     data_.read_image_data  (format, image_.image_path+name, i, mean_, eigvec_, eigval_, rand_);
   }
   curr_no_ += data_.nums();
   LOG (INFO) << "\timage read\tnumImages = " << data_.nums();
@@ -216,9 +216,6 @@ template <typename XPU, typename DT>
 void DataBatch<XPU, DT>::copy (const DataBuffer<DT> &in)
 {  data_.copy (in. data_.segment (curr_no_, curr_no_+data_.nums()));
   label_.copy (in.label_.segment (curr_no_, curr_no_+data_.nums()));
-//DT  label_sum  = label_.reduce_sum ();
-//if (label_sum != label_.nums())
-//  LOG (ERROR) << "\tbatch labels not correct\t" << label_sum;
 }
 #ifdef __CUDACC__
 template void DataBatch<GPU, float>::copy (const DataBuffer<float> &in);
