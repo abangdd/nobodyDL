@@ -1,16 +1,22 @@
 #ifndef NNET_NEURON_
 #define NNET_NEURON_
 
-#include <float.h>
 #include "../include/nnet.h"
 
 #define LEAKY 0.1
+
+enum neuron_t
+{ RELU		= 1,
+  SIGMOID	= 2,
+  TANH		= 3
+};
 
 template <typename DT>
 XPU_KERNEL(NeuronForward) (
   const int num_kernels, const DT* src_data, DT* dst_data)
 { kernel_for (i, num_kernels)
     dst_data[i] = src_data[i] * (src_data[i] >= (DT)0. ? (DT)1. : (DT)LEAKY);
+//  dst_data[i] = src_data[i] > (DT)0. ? sqrtf(src_data[i]) : -sqrtf(-src_data[i]);
 };
 
 template <typename DT>
@@ -18,6 +24,7 @@ XPU_KERNEL(NeuronBackward) (
   const int num_kernels, DT* src_diff, const DT* dst_diff)
 { kernel_for (i, num_kernels)
     src_diff[i] = dst_diff[i] * (src_diff[i] >= (DT)0. ? (DT)1. : (DT)LEAKY);
+//  src_diff[i] = dst_diff[i] * (DT)0.5;
 };
 
 
