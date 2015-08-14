@@ -96,6 +96,7 @@ void ParaNNet::config (const libconfig::Config &cfg)
       pl.idxs	= idxn;
       pl.idxd	= idxn+1;
       paraLayer_.push_back (pl);
+      num_splits = round (1/pl.dropout);
       idxn++;
     }
 
@@ -150,11 +151,6 @@ int ParaNNet::get_layer_type (const char *t)
 #endif
 
 #ifdef __CUDACC__
-void ParaLayer::setPoolingDescriptor (cudnnPoolingDescriptor_t &desc)
-{ cuda_check (cudnnSetPooling2dDescriptor (desc, pool == AVE ?
-    CUDNN_POOLING_AVERAGE_COUNT_EXCLUDE_PADDING : CUDNN_POOLING_MAX, ksize, ksize, pad, pad, stride, stride));
-}
-
 template <>
 void TensorGPUf::setTensor4dDescriptor (cudnnTensorDescriptor_t &desc)
 { cuda_check (cudnnSetTensor4dDescriptor (desc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, nums(), chls(), rows(), cols()));
@@ -185,7 +181,7 @@ template LayerBase<CPU>* create_layer (ParaLayer &pl, const int did, TensorCPUf 
 
 template <typename XPU>
 void LayerBase<XPU>::get_model_info ()
-{ char pszstr[8];  sprintf (pszstr, "%.3f", pl_.sigma);
+{ char pszstr[8];  sprintf (pszstr, "%.2f", pl_.sigma);
   LOG (INFO) << "\tModel initialized\t" << pl_.get_layer_type() << "\t" << atof (pszstr);
 }
 template void LayerBase<GPU>::get_model_info ();
