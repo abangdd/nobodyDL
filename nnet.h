@@ -8,23 +8,6 @@
   #define USE_CUDNN true
 #endif
 
-enum neuron_t
-{ RELU		= 1,
-  SIGMOID	= 2,
-  TANH		= 3
-};
-
-enum pool_t
-{ MAX		= 1,
-  AVE		= 2
-};
-
-enum loss_t
-{ ENTROPY	= 1,
-  EUCLIDEAN	= 2,
-  LOGISTIC	= 3
-};
-
 enum layer_t
 { kConvolution	= 1,
   kDropout	= 2,
@@ -228,7 +211,7 @@ LayerBase<XPU>* create_layer (ParaLayer &pl, const int did, Tensor<XPU, float> &
 
 class ParaNNet {
 public:
-  explicit ParaNNet () { };
+  explicit ParaNNet () : num_splits(1) { };
   void config (const libconfig::Config &cfg);
   int get_layer_type (const char *type);
 public:
@@ -248,6 +231,7 @@ public:
   int num_device;
   int num_layers;
   int num_optims;
+  int num_splits;
   int stt_round;
   int end_round;
   int max_round;
@@ -259,7 +243,8 @@ public:
   ~NNetModel ()
   { for (int did = 0; did < para_.num_device; ++did)  mem_free (did);  }
   void mem_free (const int did);
-  void init  ();
+  void init_model ();
+  void init_data  ();
   void train ();
   void save_model (const int did);
   void load_model (const int did);
