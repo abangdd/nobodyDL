@@ -5,7 +5,7 @@
 #include "../include/nnet.h"
 
 template <typename XPU>
-void NNetModel<XPU>::init ()
+void NNetModel<XPU>::init_model ()
 { train_. resize (para_.num_nnets);
    test_. resize (para_.num_nnets);
   batch_. resize (para_.num_nnets);
@@ -51,8 +51,38 @@ void NNetModel<XPU>::init ()
     }
   }
 }
-template void NNetModel<GPU>::init ();
-template void NNetModel<CPU>::init ();
+template void NNetModel<GPU>::init_model ();
+template void NNetModel<CPU>::init_model ();
+
+template <typename XPU>
+void NNetModel<XPU>::init_data ()
+{ for (int did = para_.min_device; did <= para_.max_device; ++did)
+  { cuda_set_device (did);
+
+    train_[did].create (para_.tFormat_, did);
+     test_[did].create (para_.tFormat_, did);
+    train_[did].read (para_.dataTrain_);
+     test_[did].read (para_.dataTest_);
+    train_[did].read_stats (para_.dataTrain_);
+     test_[did].read_stats (para_.dataTest_);
+    train_[did].data_.sub_mean (train_[did].mean_);
+     test_[did].data_.sub_mean ( test_[did].mean_);
+#ifdef __CUDACC__
+    train_[did].page_lock ();
+     test_[did].page_lock ();
+#endif
+  }
+
+  dataIm_.init (para_.dataTrain_);
+  for (int did = para_.min_device; did <= para_.max_device; ++did)
+  { train_[did].image_.init (dataIm_, did - para_.min_device, para_.num_device);
+     test_[did].image_.init (para_.dataTest_);
+    train_[did].set_image_lnums ();
+     test_[did].set_image_lnums ();
+  }
+}
+template void NNetModel<GPU>::init_data ();
+template void NNetModel<CPU>::init_data ();
 
 template <typename XPU>
 void NNetModel<XPU>::mem_free (const int did)
@@ -67,6 +97,38 @@ void NNetModel<XPU>::mem_free (const int did)
 }
 template void NNetModel<GPU>::mem_free (const int did);
 template void NNetModel<CPU>::mem_free (const int did);
+
+template <typename XPU>
+void NNetModel<XPU>::save_model (const int did)
+{ cuda_set_device (did);
+  if (did != para_.min_device)
+    return;
+  for (int i = 0; i < para_.num_layers; ++i)
+  { char layerid[16];  sprintf (layerid, "%02d", i);
+    layers_[did][i]->save_model (para_.model_.path+"_layer_"+layerid);
+  }
+}
+template void NNetModel<GPU>::save_model (const int did);
+
+template <typename XPU>
+void NNetModel<XPU>::load_model (const int did)
+{ cuda_set_device (did);
+  for (int i = 0; i < para_.num_layers; ++i)
+  { char layerid[16];  sprintf (layerid, "%02d", i);
+    layers_[did][i]->load_model (para_.model_.path+"_layer_"+layerid);
+  }
+}
+template void NNetModel<GPU>::load_model (const int did);
+
+template <typename XPU>
+void NNetModel<XPU>::show_model (const int did)
+{ cuda_set_device (did);
+  for (int i = 0; i < para_.num_layers; ++i)
+    layers_[did][i]->show_model ();
+}
+template void NNetModel<GPU>::show_model (const int did);
+
+
 
 template <typename XPU>
 void NNetModel<XPU>::fprop (const int did, const bool is_train)
@@ -127,65 +189,8 @@ void NNetModel<XPU>::reduce_gmat (const int did)
 
 
 template <typename XPU>
-void NNetModel<XPU>::save_model (const int did)
-{ cuda_set_device (did);
-  if (did != para_.min_device)
-    return;
-  for (int i = 0; i < para_.num_layers; ++i)
-  { char layerid[16];  sprintf (layerid, "%02d", i);
-    layers_[did][i]->save_model (para_.model_.path+"_layer_"+layerid);
-  }
-}
-template void NNetModel<GPU>::save_model (const int did);
-
-template <typename XPU>
-void NNetModel<XPU>::load_model (const int did)
-{ cuda_set_device (did);
-  for (int i = 0; i < para_.num_layers; ++i)
-  { char layerid[16];  sprintf (layerid, "%02d", i);
-    layers_[did][i]->load_model (para_.model_.path+"_layer_"+layerid);
-  }
-}
-template void NNetModel<GPU>::load_model (const int did);
-
-template <typename XPU>
-void NNetModel<XPU>::show_model (const int did)
-{ cuda_set_device (did);
-  for (int i = 0; i < para_.num_layers; ++i)
-    layers_[did][i]->show_model ();
-}
-template void NNetModel<GPU>::show_model (const int did);
-
-
-
-template <typename XPU>
 void NNetModel<XPU>::train ()
-{ for (int did = para_.min_device; did <= para_.max_device; ++did)
-  { cuda_set_device (did);
-
-    train_[did].create (para_.tFormat_, did);
-     test_[did].create (para_.tFormat_, did);
-    train_[did].read (para_.dataTrain_);
-     test_[did].read (para_.dataTest_);
-    train_[did].read_stats (para_.dataTrain_);
-     test_[did].read_stats (para_.dataTest_);
-    train_[did].data_.sub_mean (train_[did].mean_);
-     test_[did].data_.sub_mean ( test_[did].mean_);
-#ifdef __CUDACC__
-    train_[did].page_lock ();
-     test_[did].page_lock ();
-#endif
-  }
-
-  dataIm_.init (para_.dataTrain_);
-  for (int did = para_.min_device; did <= para_.max_device; ++did)
-  { train_[did].image_.init (dataIm_, did - para_.min_device, para_.num_device);
-     test_[did].image_.init (para_.dataTest_);
-    train_[did].set_image_lnums ();
-     test_[did].set_image_lnums ();
-  }
-
-  for (int r = para_.stt_round; r < para_.end_round; ++r)
+{ for (int r = para_.stt_round; r < para_.end_round; ++r)
 #pragma omp parallel for
   for (int did = para_.min_device; did <= para_.max_device; ++did)
   { for (size_t i = 0; i < optims_[did].size(); ++i)
@@ -203,13 +208,13 @@ void NNetModel<XPU>::train_epoch (DataBuffer<float> &buffer, const int did)
   const int numBatches = para_.tFormat_.numBatch;
   const int numBuffers = buffer.lnums_ / buffer.data_.nums();
   std::thread reader;
-  std::random_shuffle (buffer.image_.img_list.begin(), buffer.image_.img_list.end());
+  std::random_shuffle (buffer.image_.imgList.begin(), buffer.image_.imgList.end());
 
   for (int i = 0; i < numBuffers; ++i)
   { para_.tFormat_.isTrain = true;
     if (para_.dataTrain_.type == "image")
     { buffer.reset ();
-      reader = std::thread (&DataBuffer<float>::read_image, &buffer, std::ref(para_.tFormat_));
+      reader = std::thread (&DataBuffer<float>::read_image_thread, &buffer, std::ref(para_.tFormat_));
     }
 
     batch_[did].reset ();
@@ -248,7 +253,7 @@ void NNetModel<XPU>::eval_epoch (DataBuffer<float> &buffer, const int did)
   { para_.tFormat_.isTrain = false;
     if (para_.dataTest_.type == "image")
     { buffer.reset ();
-      reader = std::thread (&DataBuffer<float>::read_image, &buffer, std::ref(para_.tFormat_));
+      reader = std::thread (&DataBuffer<float>::read_image_thread, &buffer, std::ref(para_.tFormat_));
     }
 
     batch_[did].reset ();
