@@ -119,7 +119,7 @@ public:
   explicit ParaFileData () { };
   explicit ParaFileData (const libconfig::Config &cfg, const string token);
 public:
-  string type, data, mean, label;
+  string type, data, mean, eigvec, eigval, label;
 };
 
 class DataImage {
@@ -133,16 +133,15 @@ public:
   string suffix;
   string image_path;
   string label_path;
-  vector<string> dir_list;
-  vector<string> img_list;
+  vector<string> imgList;
   std::unordered_map<string, int> label_map;
 };
 
 void random_index (const int cnt, vector<int> &randIdx);
-
+void get_mem_usage ();
 void get_dir_list  (const string &dirRoot, int level, vector<string> &dirList);
-void get_file_list (const string &folder,          const string &suffix, vector<string> &fileList);
-void get_file_list (const vector<string> &dirList, const string &suffix, vector<string> &pathList);
+void get_file_list (const string &folder,  const string &suffix, vector<string> &fileList);
+void get_path_list (const string &dirRoot, const string &suffix, vector<string> &pathList);
 string replace (string &in, const string &subset, const string &section);
 
 #endif
