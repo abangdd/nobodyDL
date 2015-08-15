@@ -122,6 +122,12 @@ public:
   string type, data, mean, eigvec, eigval, label;
 };
 
+class ParaImage {
+public:
+  explicit ParaImage (const int a, const int b) : rows(a), cols(b) { }
+  int rows, cols;
+};
+
 class DataImage {
 public:
   void init (const string &a, const string &b, const string &c);
