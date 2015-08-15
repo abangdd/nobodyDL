@@ -1,6 +1,7 @@
 #ifndef TENSOR_H_
 #define TENSOR_H_
 
+#include <float.h>
 #include <memory.h>
 
 #include "util.h"
@@ -169,7 +170,7 @@ public:
   size_t size_d () const { return shape.size * sizeof(DT);  }
   void print (const int cnt) const;
   cudaStream_t   get_copy_stream () const { return dnnctx[did_]->stream_;  }
-  cudaStream_t   get_cmpt_stream () const { return dnnctx[did_]->stream_;  }
+  cudaStream_t   get_calc_stream () const { return dnnctx[did_]->stream_;  }
   cublasHandle_t get_blas_handle () const { return dnnctx[did_]->cublas_;  }
   void setTensor4dDescriptor (cudnnTensorDescriptor_t &desc);
   void setFilter4dDescriptor (cudnnFilterDescriptor_t &desc);
@@ -197,10 +198,10 @@ public:
   void page_unlk ();
   void read_tensor (const ParaFileData &pd);
   void read_stats  (const ParaFileData &pd);
-  void read_image          (const TensorFormat &tf);
+  void read_image_thread   (const TensorFormat &tf);
   void read_image_parallel (const TensorFormat &tf);
   void read (const ParaFileData &pd);
-  void set_image_lnums () { lnums_ = image_.img_list.size();  }
+  void set_image_lnums () { lnums_ = dataIm_.imgList.size();  }
   void get_mean (const ParaFileData &pd, const TensorFormat &tf);
   void sampling (const ParaFileData &pd, const TensorFormat &tf, const int keepdim, Tensor<CPU, DT> &sample);
   void evaluate (DT &err);
@@ -213,7 +214,7 @@ public:
   Tensor<CPU, DT> eigvec_;
   Tensor<CPU, DT> eigval_;
   Tensor<CPU, DT> label_;
-  DataImage       image_;
+  DataImage dataIm_;
   int did_;
   int curr_no_;
   int lnums_, cnums_;
