@@ -6,7 +6,7 @@
 
 #define XPU GPU
 
-DEFINE_string (config, "config/imagenet56_conv.cfg", "config file");
+DEFINE_string (config, "config/imagenet112_conv_08.cfg", "config file");
 
 int main (int argc, char** argv)
 { fLB::FLAGS_colorlogtostderr = true;
@@ -27,10 +27,11 @@ int main (int argc, char** argv)
   }
 //cuda_set_p2p (model.para_.num_device);
 
-  model.init ();
+  model.init_model ();
+  model.init_data  ();
   model.train ();
 
 //cuda_del_p2p (model.para_.num_device);
-  for (int i = model.para_.min_device; i <= model.para_.max_device; ++i)
-    dnnctx[i]->release ();
+//for (int i = model.para_.min_device; i <= model.para_.max_device; ++i)
+//  dnnctx[i]->release ();
 }
