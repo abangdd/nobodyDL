@@ -4,6 +4,7 @@
 #include "../include/tensor.h"
 
 #ifndef __CUDACC__
+static const int nthd = 4;
 TensorFormat::TensorFormat (const libconfig::Config &cfg) : isTrain(true)
 { rows	= cfg.lookup ("tformat.rows");
   cols	= cfg.lookup ("tformat.cols");
@@ -64,7 +65,7 @@ template void DataBuffer<float>::page_unlk ();
 #else
 template <typename DT>
 void DataBuffer<DT>::reset ()
-{ cnums_ = 0;
+{ inums_ = 0;
    data_.mem_set (0);
    pred_.mem_set (0);
   label_.mem_set (0);
@@ -87,7 +88,7 @@ void DataBuffer<DT>::read_tensor (const ParaFileData &pd)
 {  data_.load (pd. data, did_);
   label_.load (pd.label, did_);
   pred_.create (label_.shape, did_);
-  lnums_ = cnums_ = data_.nums();
+  lnums_ = inums_ = data_.nums();
 }
 template void DataBuffer<float>::read_tensor (const ParaFileData &pd);
 
@@ -100,22 +101,22 @@ void DataBuffer<DT>::read_stats  (const ParaFileData &pd)
 template void DataBuffer<float>::read_stats  (const ParaFileData &pd);
 
 template <>
-void DataBuffer<float>::read_image_thread   (const TensorFormat &format)
+void DataBuffer<float>::read_image_thread (const TensorFormat &format)
 { if (curr_no_ + data_.nums() > lnums_)
     curr_no_ = 0;
-  cnums_ = 0;
-  for (int i = 0; i < data_.nums(); ++i)
-  { const int idx = curr_no_ + i;
-    const string name = dataIm_.imgList[idx];
-     data_.read_image_data  (format,  dataIm_.image_path+name, i, mean_, eigvec_, eigval_, rand_);
-    label_.read_image_label (dataIm_, dataIm_.image_path+name, i);
-    cnums_ += 1;
-  }
+  for (inums_ = 0; inums_ < data_.nums(); inums_ += nthd)
+#pragma omp parallel for
+    for (int t = inums_; t < inums_+nthd; ++t)
+    { const int idx = curr_no_ + t;
+      const string name = dataIm_.image_path + dataIm_.imgList[idx];
+       data_.read_image_data  (format,  name, t, mean_, eigvec_, eigval_, rand_);
+      label_.read_image_label (dataIm_, name, t);
+    }
   curr_no_ += data_.nums();
 }
 
 template <>
-void DataBuffer<float>::read_image_parallel (const TensorFormat &format)
+void DataBuffer<float>::read_image_openmp (const TensorFormat &format)
 { if (curr_no_ + data_.nums() > lnums_)
     curr_no_ = 0;
 #pragma omp parallel for
@@ -143,7 +144,7 @@ void DataBuffer<DT>::get_mean (const ParaFileData &pd, const TensorFormat &tf)
   const int count = lnums_ / data_.nums();
   for (int c = 0; c < count; ++c)
   { if (pd.type == "image")
-      read_image_parallel (tf);
+      read_image_openmp (tf);
     data_. get_mean  (mean_b);
     mean_g.blas_axpy (mean_b, 1.);
   }
@@ -166,7 +167,7 @@ void DataBuffer<DT>::sampling (const ParaFileData &pd, const TensorFormat &tf, c
   Shape sshape (rows, dims, cols, bats);  sample.create (sshape);
   for (int b = 0; b < bats; ++b)
   { if (pd.type == "image")
-      read_image_parallel (tf);
+      read_image_openmp (tf);
     DT *sptr = sample[b].dptr;
     for (int i = 0; i < rows*cols; ++i)
     { const int idx = rand() % nums;  // i / strd;
