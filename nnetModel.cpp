@@ -46,9 +46,7 @@ void NNetModel<XPU>::init_model ()
     batch_[did].label_ = nodes_[did][para_.num_nodes - 1];
   
     if (para_.model_.if_update)
-    { load_model (did);
-    //show_model (did);
-    }
+      load_model (did);
   }
 }
 template void NNetModel<GPU>::init_model ();
@@ -119,14 +117,6 @@ void NNetModel<XPU>::load_model (const int did)
   }
 }
 template void NNetModel<GPU>::load_model (const int did);
-
-template <typename XPU>
-void NNetModel<XPU>::show_model (const int did)
-{ cuda_set_device (did);
-  for (int i = 0; i < para_.num_layers; ++i)
-    layers_[did][i]->show_model ();
-}
-template void NNetModel<GPU>::show_model (const int did);
 
 
 
@@ -219,7 +209,7 @@ void NNetModel<XPU>::train_epoch (DataBuffer<float> &buffer, const int did)
 
     batch_[did].reset ();
     for (int j = 0; j < numBatches; ++j)
-    { while (buffer.cnums_ < (j+1)*mini_batch)
+    { while (buffer.inums_ < (j+1)*mini_batch)
         sleep (0.001);
       if (para_.dataTrain_.type == "image")
         batch_[did].copy (buffer);
@@ -258,7 +248,7 @@ void NNetModel<XPU>::eval_epoch (DataBuffer<float> &buffer, const int did)
 
     batch_[did].reset ();
     for (int j = 0; j < numBatches; ++j)
-    { while (buffer.cnums_ < (j+1)*mini_batch)
+    { while (buffer.inums_ < (j+1)*mini_batch)
         sleep (0.001);
       batch_[did].copy (buffer);
       fprop (did, false);
