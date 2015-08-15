@@ -106,9 +106,9 @@ void DataBuffer<float>::read_image_thread   (const TensorFormat &format)
   cnums_ = 0;
   for (int i = 0; i < data_.nums(); ++i)
   { const int idx = curr_no_ + i;
-    const string name = image_.imgList[idx];
-     data_.read_image_data  (format, image_.image_path+name, i, mean_, eigvec_, eigval_, rand_);
-    label_.read_image_label (image_, image_.image_path+name, i);
+    const string name = dataIm_.imgList[idx];
+     data_.read_image_data  (format,  dataIm_.image_path+name, i, mean_, eigvec_, eigval_, rand_);
+    label_.read_image_label (dataIm_, dataIm_.image_path+name, i);
     cnums_ += 1;
   }
   curr_no_ += data_.nums();
@@ -121,8 +121,8 @@ void DataBuffer<float>::read_image_parallel (const TensorFormat &format)
 #pragma omp parallel for
   for (int i = 0; i < data_.nums(); ++i)
   { const int idx = curr_no_ + i;
-    const string name = image_.imgList[idx];
-     data_.read_image_data  (format, image_.image_path+name, i, mean_, eigvec_, eigval_, rand_);
+    const string name = dataIm_.imgList[idx];
+     data_.read_image_data  (format,  dataIm_.image_path+name, i, mean_, eigvec_, eigval_, rand_);
   }
   curr_no_ += data_.nums();
   LOG (INFO) << "\timage read\tnumImages = " << data_.nums();
