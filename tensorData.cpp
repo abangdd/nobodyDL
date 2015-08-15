@@ -94,8 +94,8 @@ template void DataBuffer<float>::read_tensor (const ParaFileData &pd);
 template <typename DT>
 void DataBuffer<DT>::read_stats  (const ParaFileData &pd)
 {   mean_.load (pd.  mean, 0);
-  eigvec_.load (pd.eigvec, 0);
-  eigval_.load (pd.eigval, 0);
+//eigvec_.load (pd.eigvec, 0);
+//eigval_.load (pd.eigval, 0);
 }
 template void DataBuffer<float>::read_stats  (const ParaFileData &pd);
 
