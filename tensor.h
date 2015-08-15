@@ -198,8 +198,8 @@ public:
   void page_unlk ();
   void read_tensor (const ParaFileData &pd);
   void read_stats  (const ParaFileData &pd);
-  void read_image_thread   (const TensorFormat &tf);
-  void read_image_parallel (const TensorFormat &tf);
+  void read_image_thread (const TensorFormat &tf);
+  void read_image_openmp (const TensorFormat &tf);
   void read (const ParaFileData &pd);
   void set_image_lnums () { lnums_ = dataIm_.imgList.size();  }
   void get_mean (const ParaFileData &pd, const TensorFormat &tf);
@@ -217,7 +217,7 @@ public:
   DataImage dataIm_;
   int did_;
   int curr_no_;
-  int lnums_, cnums_;
+  int lnums_, inums_;
 };
 
 template <typename XPU, typename DT>
