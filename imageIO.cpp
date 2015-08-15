@@ -145,7 +145,7 @@ void TensorCPUf::read_image_label (const DataImage &dimg, const string &file, co
 
 
 
-void image_resize (const ParaImCvt &para, const string &fsrc, const string &fdst)
+void image_resize (const ParaImage &para, const string &fsrc, const string &fdst)
 { Mat isrc = cv::imread (fsrc, 1);
   if (!isrc.data)
   { LOG (WARNING) << "\timage is invalid\t" << fsrc;
@@ -164,7 +164,7 @@ void image_resize (const ParaImCvt &para, const string &fsrc, const string &fdst
   cv::imwrite(fdst, idst);
 }
 
-void image_resize (const ParaImCvt &para, const string &folder_src, const string &folder_dst, const string &suffix)
+void image_resize (const ParaImage &para, const string &folder_src, const string &folder_dst, const string &suffix)
 { vector<string> srcList;  get_dir_list (folder_src, -1, srcList);
   vector<string> dstList;  dstList = srcList;
   for (size_t i = 0; i < srcList.size(); i++)
