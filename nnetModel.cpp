@@ -75,8 +75,8 @@ void NNetModel<XPU>::init_data ()
 
   dataIm_.init (para_.dataTrain_);
   for (int did = para_.min_device; did <= para_.max_device; ++did)
-  { train_[did].image_.init (dataIm_, did - para_.min_device, para_.num_device);
-     test_[did].image_.init (para_.dataTest_);
+  { train_[did].dataIm_.init (dataIm_, did - para_.min_device, para_.num_device);
+     test_[did].dataIm_.init (para_.dataTest_);
     train_[did].set_image_lnums ();
      test_[did].set_image_lnums ();
   }
@@ -208,7 +208,7 @@ void NNetModel<XPU>::train_epoch (DataBuffer<float> &buffer, const int did)
   const int numBatches = para_.tFormat_.numBatch;
   const int numBuffers = buffer.lnums_ / buffer.data_.nums();
   std::thread reader;
-  std::random_shuffle (buffer.image_.imgList.begin(), buffer.image_.imgList.end());
+  std::random_shuffle (buffer.dataIm_.imgList.begin(), buffer.dataIm_.imgList.end());
 
   for (int i = 0; i < numBuffers; ++i)
   { para_.tFormat_.isTrain = true;
