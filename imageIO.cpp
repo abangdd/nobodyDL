@@ -113,7 +113,7 @@ void TensorCPUf::read_image_data (const TensorFormat &tf, const string &file, co
   cv::Rect roi (x0, y0, crop_cols, crop_rows);
   Mat crop = src (roi);
   if (tf.isTrain)
-  { if (crop_ratio < 1)  cv::resize (crop, crop, cv::Size(cols(), rows()), 0, 0, CV_INTER_LINEAR);
+  { if (crop_ratio < 1)  cv::resize (crop, crop, cv::Size(cols(), rows()), 0, 0, CV_INTER_CUBIC);
     if (crop_ratio > 1)  cv::resize (crop, crop, cv::Size(cols(), rows()), 0, 0, CV_INTER_AREA);
   }
 /*
@@ -151,7 +151,7 @@ void image_resize (const ParaImCvt &para, const string &fsrc, const string &fdst
   { LOG (WARNING) << "\timage is invalid\t" << fsrc;
     return;
   }
-  int rows = isrc.rows, cols = isrc.cols;
+  const int rows = isrc.rows, cols = isrc.cols;
   float minDim = std::min (para.rows, para.cols);
   float aRatio = (float)rows / cols;
   //if (aRatio > 1.33f) aRatio = 1.33f;
