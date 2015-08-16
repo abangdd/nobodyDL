@@ -90,8 +90,8 @@ public:
   void create (const Shape &s, const int did = 0);
   void copy (const Tensor<GPU, DT> &in);
   void copy (const Tensor<CPU, DT> &in);
-  Tensor<XPU, DT> segment (const int begin, const int end) const;
-  Tensor<XPU, DT> operator[] (const int idx) const { return segment (idx, idx+1);  }
+  Tensor<XPU, DT> section (const int begin, const int end) const;
+  Tensor<XPU, DT> operator[] (const int idx) const { return section (idx, idx+1);  }
   const Tensor<XPU, DT>& operator= (const Tensor<XPU, DT>& t);
 private:
   void mem_alloc();
