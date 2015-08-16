@@ -50,7 +50,6 @@ public:
   virtual void init_model () { }
   virtual void save_model (const string file) { }
   virtual void load_model (const string file) { }
-  virtual void show_model () { }
   virtual void get_model_info ();
   virtual void set_optimization (ParaOptim &paraWmat, ParaOptim &paraBias, vector<OptimBase<XPU, float>*> &optims) { }
   virtual cudaStream_t  get_calc_stream () const { return dnnctx[did_]->stream_;  }
@@ -106,7 +105,6 @@ public:
   LAYER_CONSTRUCTOR (LayerConvolution);
   LAYER_FUNC ();
   MODEL_FUNC ();
-  void show_model ();
 public:
   Patch patch_;
   LAYER_MEMBER;
@@ -160,8 +158,10 @@ public:
   Pool  pool_;
   LAYER_MEMBER;
 private:
-  cudnnTensorDescriptor_t srcDesc_, dstDesc_;
-  cudnnPoolingDescriptor_t  poolDesc_;
+  cudnnTensorDescriptor_t srcDesc_, ssrcDesc_;
+  cudnnTensorDescriptor_t dstDesc_, sdstDesc_;
+  cudnnPoolingDescriptor_t poolDesc_;
+  int secs_, secn_;
 };
 
 template <typename XPU>
@@ -248,7 +248,6 @@ public:
   void train ();
   void save_model (const int did);
   void load_model (const int did);
-  void show_model (const int did);
 private:
   void train_epoch (DataBuffer<float> &buffer, const int did);
   void  eval_epoch (DataBuffer<float> &buffer, const int did);
