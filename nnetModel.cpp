@@ -237,6 +237,7 @@ void NNetModel<XPU>::eval_epoch (DataBuffer<float> &buffer, const int did)
   const int numBatches = para_.tFormat_.numBatch;
   const int numBuffers = buffer.lnums_ / buffer.data_.nums();
   std::thread reader;
+  std::random_shuffle (buffer.dataIm_.imgList.begin(), buffer.dataIm_.imgList.end());
 
   float test_err = 0.f;
   for (int i = 0; i < numBuffers; ++i)
