@@ -44,6 +44,7 @@ void NNetModel<XPU>::init_model ()
     batch_[did].data_  = nodes_[did][0];
     batch_[did].pred_  = nodes_[did][para_.num_nodes - 2];
     batch_[did].label_ = nodes_[did][para_.num_nodes - 1];
+    batch_[did].set_dnums ();  // TODO
   
     if (para_.model_.if_update)
       load_model (did);
@@ -71,6 +72,8 @@ void NNetModel<XPU>::init_data ()
 #endif
   }
 
+  if (para_.dataType != "image")
+    return;
   dataIm_.init (para_.dataTrain_);
   for (int did = para_.min_device; did <= para_.max_device; ++did)
   { train_[did].dataIm_.init (dataIm_, did - para_.min_device, para_.num_device);
@@ -185,78 +188,75 @@ void NNetModel<XPU>::train ()
   for (int did = para_.min_device; did <= para_.max_device; ++did)
   { for (size_t i = 0; i < optims_[did].size(); ++i)
       optims_[did][i]->para_.set_lrate (r, para_.max_round);
-    train_epoch (train_[did], did);
+    train_epoch (train_[did], batch_[did], did);
   }
 }
 template void NNetModel<GPU>::train ();
 template void NNetModel<CPU>::train ();
 
 template <typename XPU>
-void NNetModel<XPU>::train_epoch (DataBuffer<float> &buffer, const int did)
+void NNetModel<XPU>::train_epoch (DataBuffer<float> &buffer, DataBatch<XPU, float> &batch, const int did)
 { const int numEvals   = para_.num_evals;
   const int mini_batch = para_.tFormat_.nums;
-  const int numBatches = para_.tFormat_.numBatch;
-  const int numBuffers = buffer.lnums_ / buffer.data_.nums();
+  const int numBatches = buffer.dnums_ / batch .dnums_;
+  const int numBuffers = buffer.lnums_ / buffer.dnums_;
   std::thread reader;
   std::random_shuffle (buffer.dataIm_.imgList.begin(), buffer.dataIm_.imgList.end());
 
   for (int i = 0; i < numBuffers; ++i)
   { para_.tFormat_.isTrain = true;
-    if (para_.dataTrain_.type == "image")
-    { buffer.reset ();
+    if (para_.dataType == "image")
       reader = std::thread (&DataBuffer<float>::read_image_thread, &buffer, std::ref(para_.tFormat_));
-    }
 
-    batch_[did].reset ();
+    batch.reset ();
     for (int j = 0; j < numBatches; ++j)
     { while (buffer.inums_ < (j+1)*mini_batch)
         sleep (0.001);
-      if (para_.dataTrain_.type == "image")
-        batch_[did].copy (buffer);
+      if (para_.dataType == "image")
+        batch.copy (buffer);
       else
-        batch_[did].rand (buffer);
+        batch.rand (buffer);
       fprop (did, true);
       bprop (did);
 
       reduce_gmat (did);
       update_wmat (did);
-      batch_[did].next (buffer);
+      batch.next (buffer);
     }
-    reader.join ();
+    if (para_.dataType == "image")
+      reader.join ();
 
     if ((i+1) % (numBuffers/numEvals) == 0)
-    { eval_epoch ( test_[did], did);
+    { eval_epoch ( test_[did], batch, did);
       save_model (did);
     }
   }
 }
 
 template <typename XPU>
-void NNetModel<XPU>::eval_epoch (DataBuffer<float> &buffer, const int did)
+void NNetModel<XPU>::eval_epoch (DataBuffer<float> &buffer, DataBatch<XPU, float> &batch, const int did)
 { const int mini_batch = para_.tFormat_.nums;
-  const int numBatches = para_.tFormat_.numBatch;
-  const int numBuffers = buffer.lnums_ / buffer.data_.nums();
+  const int numBatches = buffer.dnums_ / batch .dnums_;
+  const int numBuffers = buffer.lnums_ / buffer.dnums_;
   std::thread reader;
-  std::random_shuffle (buffer.dataIm_.imgList.begin(), buffer.dataIm_.imgList.end());
 
   float test_err = 0.f;
   for (int i = 0; i < numBuffers; ++i)
   { para_.tFormat_.isTrain = false;
-    if (para_.dataTest_.type == "image")
-    { buffer.reset ();
+    if (para_.dataType == "image")
       reader = std::thread (&DataBuffer<float>::read_image_thread, &buffer, std::ref(para_.tFormat_));
-    }
 
-    batch_[did].reset ();
+    batch.reset ();
     for (int j = 0; j < numBatches; ++j)
     { while (buffer.inums_ < (j+1)*mini_batch)
         sleep (0.001);
-      batch_[did].copy (buffer);
+      batch.copy (buffer);
       fprop (did, false);
-      batch_[did].send (buffer);
-      batch_[did].next (buffer);
+      batch.send (buffer);
+      batch.next (buffer);
     }
-    reader.join ();
+    if (para_.dataType == "image")
+      reader.join ();
     buffer.evaluate (test_err);
   }
   LOG (INFO) << "\tGPU  " << did << "\ttest_err\t" << test_err / numBuffers;
