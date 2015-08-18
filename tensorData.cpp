@@ -4,7 +4,7 @@
 #include "../include/tensor.h"
 
 #ifndef __CUDACC__
-static const int nthd = 4;
+static const int nthd = 4;  // TODO
 TensorFormat::TensorFormat (const libconfig::Config &cfg) : isTrain(true)
 { rows	= cfg.lookup ("tformat.rows");
   cols	= cfg.lookup ("tformat.cols");
@@ -80,6 +80,7 @@ void DataBuffer<DT>::create (const TensorFormat &tf, const int did)
    data_.create (dshape, did_);
    pred_.create (lshape, did_);
   label_.create (lshape, did_);
+  dnums_ = data_.nums();  // TODO
 }
 template void DataBuffer<float>::create (const TensorFormat &tf, const int did);
 
@@ -87,8 +88,8 @@ template <typename DT>
 void DataBuffer<DT>::read_tensor (const ParaFileData &pd)
 {  data_.load (pd. data, did_);
   label_.load (pd.label, did_);
-  pred_.create (label_.shape, did_);
-  lnums_ = inums_ = data_.nums();
+   pred_.create (label_.shape, did_);
+  dnums_ = lnums_ = inums_ = data_.nums();  // TODO
 }
 template void DataBuffer<float>::read_tensor (const ParaFileData &pd);
 
@@ -102,9 +103,10 @@ template void DataBuffer<float>::read_stats  (const ParaFileData &pd);
 
 template <>
 void DataBuffer<float>::read_image_thread (const TensorFormat &format)
-{ if (curr_no_ + data_.nums() > lnums_)
+{ reset ();
+  if (curr_no_ + dnums_ > lnums_)
     curr_no_ = 0;
-  for (inums_ = 0; inums_ < data_.nums(); inums_ += nthd)
+  for (inums_ = 0; inums_ < dnums_; inums_ += nthd)
 #pragma omp parallel for
     for (int t = inums_; t < inums_+nthd; ++t)
     { const int idx = curr_no_ + t;
@@ -112,21 +114,22 @@ void DataBuffer<float>::read_image_thread (const TensorFormat &format)
        data_.read_image_data  (format,  name, t, mean_, eigvec_, eigval_, rand_);
       label_.read_image_label (dataIm_, name, t);
     }
-  curr_no_ += data_.nums();
+  curr_no_ += dnums_;
 }
 
 template <>
 void DataBuffer<float>::read_image_openmp (const TensorFormat &format)
-{ if (curr_no_ + data_.nums() > lnums_)
+{ reset ();
+  if (curr_no_ + dnums_ > lnums_)
     curr_no_ = 0;
 #pragma omp parallel for
-  for (int i = 0; i < data_.nums(); ++i)
+  for (int i = 0; i < dnums_; ++i)
   { const int idx = curr_no_ + i;
     const string name = dataIm_.imgList[idx];
      data_.read_image_data  (format,  dataIm_.image_path+name, i, mean_, eigvec_, eigval_, rand_);
   }
-  curr_no_ += data_.nums();
-  LOG (INFO) << "\timage read\tnumImages = " << data_.nums();
+  curr_no_ += dnums_;
+  LOG (INFO) << "\timage read\tnumImages = " << dnums_;
 }
 
 template <typename DT>
@@ -141,7 +144,7 @@ void DataBuffer<DT>::get_mean (const ParaFileData &pd, const TensorFormat &tf)
 { Tensor<CPU, DT> mean_b;  mean_b.create (data_[0].shape);
   Tensor<CPU, DT> mean_g;  mean_g.create (data_[0].shape);  mean_g.mem_set (0);
 
-  const int count = lnums_ / data_.nums();
+  const int count = lnums_ / dnums_;
   for (int c = 0; c < count; ++c)
   { if (pd.type == "image")
       read_image_openmp (tf);
@@ -157,7 +160,7 @@ template void DataBuffer<float>::get_mean (const ParaFileData &pd, const TensorF
 
 template <typename DT>
 void DataBuffer<DT>::sampling (const ParaFileData &pd, const TensorFormat &tf, const int keepdim, Tensor<CPU, DT> &sample)
-{ const int nums =  data_.nums();
+{ const int nums = dnums_;
   const int bats = lnums_ / nums;
   const int cols = 1024;
   const int dims = data_.shape.get_dimsX (keepdim);
@@ -215,8 +218,8 @@ template void DataBatch<CPU, float>::reset ();
 
 template <typename XPU, typename DT>
 void DataBatch<XPU, DT>::copy (const DataBuffer<DT> &in)
-{  data_.copy (in. data_.segment (curr_no_, curr_no_+data_.nums()));
-  label_.copy (in.label_.segment (curr_no_, curr_no_+data_.nums()));
+{  data_.copy (in. data_.section (curr_no_, curr_no_+dnums_));
+  label_.copy (in.label_.section (curr_no_, curr_no_+dnums_));
 }
 #ifdef __CUDACC__
 template void DataBatch<GPU, float>::copy (const DataBuffer<float> &in);
@@ -226,7 +229,7 @@ template void DataBatch<CPU, float>::copy (const DataBuffer<float> &in);
 
 template <typename XPU, typename DT>
 void DataBatch<XPU, DT>::send (DataBuffer<DT> &in) const
-{ in. pred_.segment (curr_no_, curr_no_+data_.nums()).copy ( pred_);
+{ in. pred_.section (curr_no_, curr_no_+dnums_).copy ( pred_);
 }
 #ifdef __CUDACC__
 template void DataBatch<GPU, float>::send (DataBuffer<float> &in) const;
@@ -236,7 +239,7 @@ template void DataBatch<CPU, float>::send (DataBuffer<float> &in) const;
 
 template <typename XPU, typename DT>
 void DataBatch<XPU, DT>::next (const DataBuffer<DT> &in)
-{ curr_no_ += data_.nums();
+{ curr_no_ += dnums_;
   if (curr_no_ > in.data_.nums())
     curr_no_ = 0;
 }
@@ -248,10 +251,9 @@ template void DataBatch<CPU, float>::next (const DataBuffer<float> &in);
 
 template <typename XPU, typename DT>
 void DataBatch<XPU, DT>::rand (const DataBuffer<DT> &in)
-{ const int bsize = data_.nums();
-  int begin = ::rand() % in.data_.nums() - bsize;  begin = begin < 0 ? 0 : begin;
-   data_.copy (in. data_.segment (begin, begin + bsize));
-  label_.copy (in.label_.segment (begin, begin + bsize));
+{ int begin = ::rand() % in.data_.nums() - dnums_;  begin = begin < 0 ? 0 : begin;
+   data_.copy (in. data_.section (begin, begin + dnums_));
+  label_.copy (in.label_.section (begin, begin + dnums_));
 }
 #ifdef __CUDACC__
 template void DataBatch<GPU, float>::rand (const DataBuffer<float> &in);
