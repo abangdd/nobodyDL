@@ -223,6 +223,7 @@ public:
   ParaFileData dataTest_;
   ParaModel model_;
   Shape shape_src, shape_dst;
+  string dataType;
   int num_nnets;
   int num_nodes;
   int num_evals;
@@ -249,8 +250,8 @@ public:
   void save_model (const int did);
   void load_model (const int did);
 private:
-  void train_epoch (DataBuffer<float> &buffer, const int did);
-  void  eval_epoch (DataBuffer<float> &buffer, const int did);
+  void train_epoch (DataBuffer<float> &buffer, DataBatch<XPU, float> &batch, const int did);
+  void  eval_epoch (DataBuffer<float> &buffer, DataBatch<XPU, float> &batch, const int did);
   void fprop (const int did, const bool is_train);
   void bprop (const int did);
   void reduce_gmat (const int did);
