@@ -31,6 +31,7 @@ void ParaNNet::config (const libconfig::Config &cfg)
   tFormat_  = TensorFormat (cfg);  tFormat_.numBatch /= num_device;
   dataTrain_= ParaFileData (cfg, "traindata");
   dataTest_ = ParaFileData (cfg,  "testdata");
+  dataType  = dataTrain_.type;
 
   using namespace libconfig;
   Setting
