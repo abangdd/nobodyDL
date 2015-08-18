@@ -191,7 +191,7 @@ typedef Tensor<CPU, double> TensorCPUd;
 template <typename DT>
 class DataBuffer {
 public:
-  explicit DataBuffer () : rand_(0), did_(0), curr_no_(0), dnums_(0), lnums_(0) { }
+  explicit DataBuffer () : rand_(0), did_(0), curr_no_(0), dnums_(0), lnums_(0), inums_(0) { }
   void reset ();
   void create (const TensorFormat &tf, const int did);
   void page_lock ();
