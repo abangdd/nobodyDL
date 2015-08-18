@@ -191,7 +191,7 @@ typedef Tensor<CPU, double> TensorCPUd;
 template <typename DT>
 class DataBuffer {
 public:
-  explicit DataBuffer () : rand_(0), did_(0), curr_no_(0), lnums_(0) { }
+  explicit DataBuffer () : rand_(0), did_(0), curr_no_(0), dnums_(0), lnums_(0) { }
   void reset ();
   void create (const TensorFormat &tf, const int did);
   void page_lock ();
@@ -217,24 +217,26 @@ public:
   DataImage dataIm_;
   int did_;
   int curr_no_;
-  int lnums_, inums_;
+  int dnums_, lnums_, inums_;
 };
 
 template <typename XPU, typename DT>
 class DataBatch {
 public:
-  explicit DataBatch () : did_(0), curr_no_(0) { }
+  explicit DataBatch () : did_(0), curr_no_(0), dnums_(0) { }
   void reset ();
   void copy (const DataBuffer<DT> &in);
   void send (DataBuffer<DT> &in) const;
   void next (const DataBuffer<DT> &in);
   void rand (const DataBuffer<DT> &in);
+  void set_dnums () { dnums_ = data_.nums();  }
   Tensor<XPU, DT>  data_;
   Tensor<XPU, DT>  pred_;
   Tensor<XPU, DT> label_;
   int did_;
   int curr_no_;
   int next_no_;
+  int dnums_;
 };
 
 #endif
