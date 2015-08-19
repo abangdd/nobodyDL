@@ -112,16 +112,16 @@ public:
 private:
   Tensor<XPU, float> tcol_;
   Tensor<XPU, float> mwmat_, nwmat_;
-  int chls_, nums_, flts_, grps_;
+  int chls_, nums_, flts_;
   cudnnTensorDescriptor_t srcDesc_, dstDesc_;
   cudnnTensorDescriptor_t biasDesc_;
   cudnnFilterDescriptor_t wmatDesc_;
   cudnnConvolutionDescriptor_t convDesc_;
-  cudnnConvolutionFwdAlgo_t       fwdAlgo;
+  cudnnConvolutionFwdAlgo_t       fwdDataAlgo;
   cudnnConvolutionBwdDataAlgo_t   bwdDataAlgo;
   cudnnConvolutionBwdFilterAlgo_t bwdFltrAlgo;
-  size_t fwdSize,  bwdDataSize,  bwdFltrSize;
-  void  *fwdAddr, *bwdDataAddr, *bwdFltrAddr;
+  size_t fwdDataSize,  bwdDataSize,  bwdFltrSize;
+  void  *fwdDataAddr, *bwdDataAddr, *bwdFltrAddr;
 };
 
 template <typename XPU>
@@ -211,7 +211,7 @@ LayerBase<XPU>* create_layer (ParaLayer &pl, const int did, Tensor<XPU, float> &
 
 class ParaNNet {
 public:
-  explicit ParaNNet () : num_splits(1) { };
+  explicit ParaNNet () { };
   void config (const libconfig::Config &cfg);
   int get_layer_type (const char *type);
 public:
@@ -232,7 +232,6 @@ public:
   int num_device;
   int num_layers;
   int num_optims;
-  int num_splits;
   int stt_round;
   int end_round;
   int max_round;
