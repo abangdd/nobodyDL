@@ -97,7 +97,6 @@ void ParaNNet::config (const libconfig::Config &cfg)
       pl.idxs	= idxn;
       pl.idxd	= idxn+1;
       paraLayer_.push_back (pl);
-      num_splits = round (1/pl.dropout);
       idxn++;
     }
 
@@ -132,7 +131,7 @@ void ParaNNet::config (const libconfig::Config &cfg)
   shape_dst = Shape (tFormat_.numClass, 1, 1, tFormat_.nums);
 
   num_layers = paraLayer_.size();
-  num_optims = paraWmat_ .size() + paraBias_ .size();
+  num_optims = paraWmat_ .size();  // TODO
   num_nodes  = 0;
   for (int i = 0; i < num_layers; ++i)  // TODO
     num_nodes = std::max (paraLayer_[i].idxd + 1, num_nodes);
