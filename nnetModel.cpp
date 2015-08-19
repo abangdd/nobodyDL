@@ -38,8 +38,8 @@ void NNetModel<XPU>::init_model ()
         j++;
       }
 
-    para_.paraWmat_[para_.num_optims/2 - 1].get_optim_info ();
-    para_.paraBias_[para_.num_optims/2 - 1].get_optim_info ();
+    para_.paraWmat_[0].get_optim_info ();
+    para_.paraBias_[0].get_optim_info ();
 
     batch_[did].data_  = nodes_[did][0];
     batch_[did].pred_  = nodes_[did][para_.num_nodes - 2];
@@ -239,6 +239,7 @@ void NNetModel<XPU>::eval_epoch (DataBuffer<float> &buffer, DataBatch<XPU, float
   const int numBatches = buffer.dnums_ / batch .dnums_;
   const int numBuffers = buffer.lnums_ / buffer.dnums_;
   std::thread reader;
+  std::random_shuffle (buffer.dataIm_.imgList.begin(), buffer.dataIm_.imgList.end());
 
   float test_err = 0.f;
   for (int i = 0; i < numBuffers; ++i)
