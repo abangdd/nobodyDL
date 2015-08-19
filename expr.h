@@ -5,16 +5,6 @@
 #include "xpu.h"
 
 template <typename DT>
-struct opleader {
-  XPU_CALLABLE_INLINE DT operator() (const DT a, const DT b) const { return a; }
-};
-
-template <typename DT>
-struct oplatter {
-  XPU_CALLABLE_INLINE DT operator() (const DT a, const DT b) const { return b; }
-};
-
-template <typename DT>
 struct opplus {
   XPU_CALLABLE_INLINE DT operator() (const DT a, const DT b) const { return a + b; }
   XPU_CALLABLE_INLINE DT identity() { return (DT)0; }
@@ -22,7 +12,7 @@ struct opplus {
 };
 
 template <typename DT>
-struct opminus {
+struct opsub {
   XPU_CALLABLE_INLINE DT operator() (const DT a, const DT b) const { return a - b; }
   XPU_CALLABLE_INLINE DT identity() { return (DT)0; }
 };
@@ -104,7 +94,7 @@ struct plusto {
 };
 
 template <typename DT>
-struct minusto {
+struct subto {
   XPU_CALLABLE_INLINE static void save (DT &a, DT b) { a -= b;  }
 };
 
