@@ -147,17 +147,16 @@ public:
   void blas_vinv (const Tensor<XPU, DT> &in);
   void blas_vsqr (const Tensor<XPU, DT> &in);
   void blas_vsqrt(const Tensor<XPU, DT> &in);
+  void blas_vproj(const Tensor<XPU, DT> &in, const DT val);
 public:
   DT reduce_sum () const;
   DT reduce_max () const;
   void reduce_sum  (const Tensor<XPU, DT> &in, const int keepdim);
   void reduce_var  (const Tensor<XPU, DT> &in, const int keepdim);
   void reduce_mean (const Tensor<XPU, DT> &in, const int keepdim);
-  void reduce_sum_product (const Tensor<XPU, DT> &ain, const Tensor<XPU, DT> &bin, const int keepdim);
-  void bdcast_minus (const Tensor<XPU, DT> &bin, const int keepdim);
-  void bdcast_mul   (const Tensor<XPU, DT> &bin, const int keepdim);
-  void bdcast_div   (const Tensor<XPU, DT> &bin, const int keepdim);
-  void bdcast_minus_product (const Tensor<XPU, DT> &ain, const Tensor<XPU, DT> &bin, const int keepdim);
+  void bdcast_sub (const Tensor<XPU, DT> &bin, const int keepdim);
+  void bdcast_mul (const Tensor<XPU, DT> &bin, const int keepdim);
+  void bdcast_div (const Tensor<XPU, DT> &bin, const int keepdim);
   void get_mean (Tensor<XPU, DT> &mean) const;
   void sub_mean (const Tensor<XPU, DT> &mean);
   void get_eigen(Tensor<XPU, DT> &eigvec, Tensor<XPU, DT> &eigval) const;
