@@ -22,7 +22,7 @@ class ParaLayer {
 public:
   explicit ParaLayer () : isLoad(false), isFixed(false) { };
   string get_layer_type ();
-  void setPoolingDescriptor (cudnnPoolingDescriptor_t &desc);
+  void setPoolingDesc (cudnnPoolingDescriptor_t &desc);
   int type;
   int idxs, idxd;
   int ksize, pad, stride;
