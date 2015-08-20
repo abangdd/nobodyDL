@@ -152,12 +152,12 @@ int ParaNNet::get_layer_type (const char *t)
 
 #ifdef __CUDACC__
 template <>
-void TensorGPUf::setTensor4dDescriptor (cudnnTensorDescriptor_t &desc)
+void TensorGPUf::setTensor4dDesc (cudnnTensorDescriptor_t &desc)
 { cuda_check (cudnnSetTensor4dDescriptor (desc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, nums(), chls(), rows(), cols()));
 }
 
 template <>
-void TensorGPUf::setFilter4dDescriptor (cudnnFilterDescriptor_t &desc)
+void TensorGPUf::setFilter4dDesc (cudnnFilterDescriptor_t &desc)
 { cuda_check (cudnnSetFilter4dDescriptor (desc, CUDNN_DATA_FLOAT, nums(), chls(), rows(), cols()));
 }
 #endif
