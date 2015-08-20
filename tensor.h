@@ -112,7 +112,7 @@ public:
   void read_image (const TensorFormat &tf, const vector<string> &imgList);
 public:
   void init (const DT a);
-  void init (const Random<XPU> &random, const int rand_method, const DT a=0.f,  const DT b=1.f);
+  void init (const Random<XPU> &random, const int method, const DT a=0.f,  const DT b=1.f);
   void im2col_fprop (const Patch &p, Tensor<XPU, DT> &im_col);
   void col2im_bprop (const Patch &p, Tensor<XPU, DT> &im_col);
   void shuffle (const vector<int> &idx);
@@ -153,7 +153,6 @@ public:
   DT reduce_max () const;
   void reduce_sum  (const Tensor<XPU, DT> &in, const int keepdim);
   void reduce_var  (const Tensor<XPU, DT> &in, const int keepdim);
-  void reduce_mean (const Tensor<XPU, DT> &in, const int keepdim);
   void bdcast_sub (const Tensor<XPU, DT> &bin, const int keepdim);
   void bdcast_mul (const Tensor<XPU, DT> &bin, const int keepdim);
   void bdcast_div (const Tensor<XPU, DT> &bin, const int keepdim);
@@ -171,8 +170,8 @@ public:
   cudaStream_t   get_copy_stream () const { return dnnctx[did_]->stream_;  }
   cudaStream_t   get_calc_stream () const { return dnnctx[did_]->stream_;  }
   cublasHandle_t get_blas_handle () const { return dnnctx[did_]->cublas_;  }
-  void setTensor4dDescriptor (cudnnTensorDescriptor_t &desc);
-  void setFilter4dDescriptor (cudnnFilterDescriptor_t &desc);
+  void setTensor4dDesc (cudnnTensorDescriptor_t &desc);
+  void setFilter4dDesc (cudnnFilterDescriptor_t &desc);
 public:
   Shape shape;
   DT *dptr;
