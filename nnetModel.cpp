@@ -17,7 +17,7 @@ void NNetModel<XPU>::init_model ()
     mem_free (did);
 
     nodes_[did].resize (para_.num_nodes);
-    nodes_[did][0].create                 (para_.shape_src, did);  // TODO
+    nodes_[did][0]                .create (para_.shape_src, did);  // TODO
     nodes_[did][para_.num_nodes-1].create (para_.shape_dst, did);  // TODO
   
     layers_[did].resize (para_.num_layers);
@@ -38,8 +38,8 @@ void NNetModel<XPU>::init_model ()
         j++;
       }
 
-    para_.paraWmat_[0].get_optim_info ();
-    para_.paraBias_[0].get_optim_info ();
+    para_.paraWmat_[0]                 .get_optim_info ();
+    para_.paraWmat_[para_.num_optims-1].get_optim_info ();
 
     batch_[did].data_  = nodes_[did][0];
     batch_[did].pred_  = nodes_[did][para_.num_nodes - 2];
