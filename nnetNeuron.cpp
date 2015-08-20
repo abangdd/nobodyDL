@@ -72,8 +72,8 @@ LAYER_INIT (LayerNeuron)
   cuda_check (cudnnCreateTensorDescriptor (&srcDesc_));
   cuda_check (cudnnCreateTensorDescriptor (&dstDesc_));
 
-  src_.setTensor4dDescriptor (srcDesc_);
-  dst_.setTensor4dDescriptor (dstDesc_);
+  src_.setTensor4dDesc (srcDesc_);
+  dst_.setTensor4dDesc (dstDesc_);
 #endif
 }
 
