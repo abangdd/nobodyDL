@@ -23,7 +23,6 @@ public:
   float wd;
   float momentum;
   float lrate;
-  float lr_alpha;
   float lr_base;
   float lr_last;
 };
@@ -79,13 +78,12 @@ public:
   void update ();
   void update_sgd ();
   void update_nag ();
-  void update_adam ();
   void optimize (SparseBuffer<XPU, DT> &buffer);
 private:
   ParaOptim &para_;
   int did_;
   Tensor<XPU, DT> &wmat_, &gmat_;
-  Tensor<XPU, DT> mmat_, vmat_, hmat_;
+  Tensor<XPU, DT>  mmat_,  hmat_;
   int epoch;
 };
 
