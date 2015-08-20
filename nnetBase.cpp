@@ -17,6 +17,18 @@ string ParaLayer::get_layer_type ()
   }
 }
 
+int ParaNNet::get_layer_type (const char *t)
+{ if (!strcmp (t, "conv"	)) return kConvolution;
+  if (!strcmp (t, "dropout"	)) return kDropout;
+  if (!strcmp (t, "fullc"	)) return kFullConn;
+  if (!strcmp (t, "loss"	)) return kLoss;
+  if (!strcmp (t, "neuron"	)) return kNeuron;
+  if (!strcmp (t, "softmax"	)) return kSoftmax;
+  if (!strcmp (t, "pool"	)) return kPooling;
+  LOG (FATAL) << "not known layer type";
+  return 0;
+}
+
 void ParaNNet::config (const libconfig::Config &cfg)
 { min_device = cfg.lookup ("model.min_device");
   max_device = cfg.lookup ("model.max_device");
@@ -28,10 +40,10 @@ void ParaNNet::config (const libconfig::Config &cfg)
   end_round  = cfg.lookup ("model.end_round");
   max_round  = cfg.lookup ("model.max_round");
   
-  tFormat_  = TensorFormat (cfg);  tFormat_.numBatch /= num_device;
-  dataTrain_= ParaFileData (cfg, "traindata");
-  dataTest_ = ParaFileData (cfg,  "testdata");
-  dataType  = dataTrain_.type;
+  tFormat_	= TensorFormat (cfg);  tFormat_.numBatch /= num_device;
+  dataTrain_	= ParaFileData (cfg, "traindata");
+  dataPredt_	= ParaFileData (cfg,  "testdata");
+  dataType	= dataTrain_.type;
 
   using namespace libconfig;
   Setting
@@ -135,18 +147,6 @@ void ParaNNet::config (const libconfig::Config &cfg)
   num_nodes  = 0;
   for (int i = 0; i < num_layers; ++i)  // TODO
     num_nodes = std::max (paraLayer_[i].idxd + 1, num_nodes);
-}
-
-int ParaNNet::get_layer_type (const char *t)
-{ if (!strcmp (t, "conv"	)) return kConvolution;
-  if (!strcmp (t, "dropout"	)) return kDropout;
-  if (!strcmp (t, "fullc"	)) return kFullConn;
-  if (!strcmp (t, "loss"	)) return kLoss;
-  if (!strcmp (t, "neuron"	)) return kNeuron;
-  if (!strcmp (t, "softmax"	)) return kSoftmax;
-  if (!strcmp (t, "pool"	)) return kPooling;
-  LOG (FATAL) << "not known layer type";
-  return 0;
 }
 #endif
 
