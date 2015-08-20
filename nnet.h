@@ -97,7 +97,9 @@ public:
 #define MODEL_MEMBER \
   Tensor<XPU, float> drep_,  nrep_; \
   Tensor<XPU, float> wmat_, gwmat_; \
-  Tensor<XPU, float> bias_, gbias_
+  Tensor<XPU, float> bias_, gbias_; \
+  int chls_, flts_; \
+  int dims_, nums_
 
 template <typename XPU>
 class LayerConvolution : public LayerBase<XPU> {
@@ -112,7 +114,6 @@ public:
 private:
   Tensor<XPU, float> tcol_;
   Tensor<XPU, float> mwmat_, nwmat_;
-  int chls_, nums_, flts_;
   cudnnTensorDescriptor_t srcDesc_, dstDesc_;
   cudnnTensorDescriptor_t biasDesc_;
   cudnnFilterDescriptor_t wmatDesc_;
@@ -135,7 +136,6 @@ protected:
   MODEL_MEMBER;
 private:
   Tensor<XPU, float> mwmat_, nwmat_;
-  int dims_, nums_, flts_;
 };
 
 template <typename XPU>
