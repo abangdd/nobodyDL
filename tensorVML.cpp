@@ -2,11 +2,13 @@
 #define TENSOR_VML_
 
 #include "../include/tensor.h"
+using std::max;
+using std::min;
 
 template <typename DT>
 XPU_KERNEL(kernel_add) (const int num_kernels, const DT val, DT *y)
-{ kernel_for (index, num_kernels)
-    y[index] += val;
+{ kernel_for (i, num_kernels)
+    y[i] += val;
 }
 
 template <typename XPU, typename DT>
@@ -21,6 +23,27 @@ template void TensorGPUd::add (const double val);
 #else
 template void TensorCPUf::add (const float  val);
 template void TensorCPUd::add (const double val);
+#endif
+
+template <typename DT>
+XPU_KERNEL(kernel_proj) (const int num_kernels, const DT *a, const DT val, DT *y)
+{ kernel_for (i, num_kernels)
+    y[i] = min (val/a[i], (DT)1);
+}
+
+template <typename XPU, typename DT>
+void Tensor<XPU, DT>::blas_vproj (const Tensor<XPU, DT> &in, const DT val)
+{ const int N = size();
+  XPU_KERNEL_LAUNCH (kernel_proj, cuda_get_blocks(N), CUDA_NUM_THREADS, 0, get_calc_stream(),
+    N, in.dptr, val, dptr);
+  cuda_sync_check ("cublas_vproj");
+};
+#ifdef __CUDACC__
+template void TensorGPUf::blas_vproj (const TensorGPUf &in, const float  val);
+template void TensorGPUd::blas_vproj (const TensorGPUd &in, const double val);
+#else
+template void TensorCPUf::blas_vproj (const TensorCPUf &in, const float  val);
+template void TensorCPUd::blas_vproj (const TensorCPUd &in, const double val);
 #endif
 
 
@@ -45,28 +68,28 @@ XPU_KERNEL(unary_vexpr)  (const int num_kernels, const DT *a, DT *y)
 template <typename XPU, typename DT>
 void Tensor<XPU, DT>::blas_vadd (const Tensor<XPU, DT> &A, const Tensor<XPU, DT> &B)
 { const int N = size();  CHECK_EQ (A.size(), B.size());
-  binary_vexpr_kernel<opplus <DT>><<<cuda_get_blocks(N), CUDA_NUM_THREADS, 0, get_calc_stream()>>>
+  binary_vexpr_kernel<opplus<DT>><<<cuda_get_blocks(N), CUDA_NUM_THREADS, 0, get_calc_stream()>>>
     (N, A.dptr, B.dptr, dptr);
   cuda_sync_check ("cublas_vadd");
 };
 template <typename XPU, typename DT>
 void Tensor<XPU, DT>::blas_vsub (const Tensor<XPU, DT> &A, const Tensor<XPU, DT> &B)
 { const int N = size();  CHECK_EQ (A.size(), B.size());
-  binary_vexpr_kernel<opminus<DT>><<<cuda_get_blocks(N), CUDA_NUM_THREADS, 0, get_calc_stream()>>>
+  binary_vexpr_kernel<opsub <DT>><<<cuda_get_blocks(N), CUDA_NUM_THREADS, 0, get_calc_stream()>>>
     (N, A.dptr, B.dptr, dptr);
   cuda_sync_check ("cublas_vsub");
 };
 template <typename XPU, typename DT>
 void Tensor<XPU, DT>::blas_vmul (const Tensor<XPU, DT> &A, const Tensor<XPU, DT> &B)
 { const int N = size();  CHECK_EQ (A.size(), B.size());
-  binary_vexpr_kernel<opmul  <DT>><<<cuda_get_blocks(N), CUDA_NUM_THREADS, 0, get_calc_stream()>>>
+  binary_vexpr_kernel<opmul <DT>><<<cuda_get_blocks(N), CUDA_NUM_THREADS, 0, get_calc_stream()>>>
     (N, A.dptr, B.dptr, dptr);
   cuda_sync_check ("cublas_vmul");
 };
 template <typename XPU, typename DT>
 void Tensor<XPU, DT>::blas_vdiv (const Tensor<XPU, DT> &A, const Tensor<XPU, DT> &B)
 { const int N = size();  CHECK_EQ (A.size(), B.size());
-  binary_vexpr_kernel<opdiv  <DT>><<<cuda_get_blocks(N), CUDA_NUM_THREADS, 0, get_calc_stream()>>>
+  binary_vexpr_kernel<opdiv <DT>><<<cuda_get_blocks(N), CUDA_NUM_THREADS, 0, get_calc_stream()>>>
     (N, A.dptr, B.dptr, dptr);
   cuda_sync_check ("cublas_vdiv");
 };
