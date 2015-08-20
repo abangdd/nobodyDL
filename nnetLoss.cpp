@@ -26,7 +26,7 @@ XPU_KERNEL(SigmoidForward) (
 
 LAYER_FORWARD (LayerLoss)
 { const int N = dst_.size();
-  float  snorm = 0;
+  float  sasum = 0;
   switch (pl_.loss)
   { case ENTROPY:  // p(c|x)
 #ifdef __CUDACC__
@@ -48,13 +48,15 @@ LAYER_FORWARD (LayerLoss)
     default:
       LOG (FATAL) << "not implemented loss method";
   }
-  src_.blas_nrm2 (snorm);
-  if (isnan (snorm))
-    LOG (FATAL) << "\tGPU  " << did_ << "\tsnorm is\tnan";
+  src_.blas_asum (sasum);
+  if (isnan (sasum))
+    LOG (FATAL) << "\tXPU  " << did_ << "\tsasum is\tnan";
+  if (fabs (sasum) < 1e-8)
+    LOG (FATAL) << "\tXPU  " << did_ << "\tsasum is\t0";
 }
 
 LAYER_BACKPROP (LayerLoss)
-{ float  gnorm = 0;
+{ float  gasum = 0;
   switch (pl_.loss)
   { case ENTROPY:  // p(c|x) - 1(y == c)
       src_.blas_axpy (dst_, -1);
@@ -69,9 +71,11 @@ LAYER_BACKPROP (LayerLoss)
       LOG (FATAL) << "not implemented loss method";
   }
   src_.blas_scal (1.f/nums_);
-  src_.blas_nrm2 (gnorm);
-  if (isnan (gnorm))
-    LOG (FATAL) << "\tGPU  " << did_ << "\tgnorm is\tnan";
+  src_.blas_asum (gasum);
+  if (isnan (gasum))
+    LOG (FATAL) << "\tXPU  " << did_ << "\tgasum is\tnan";
+  if (fabs (gasum) < 1e-8)
+    LOG (FATAL) << "\tXPU  " << did_ << "\tgasum is\t0";
 }
 
 LAYER_INIT (LayerLoss)
@@ -80,8 +84,8 @@ LAYER_INIT (LayerLoss)
 #ifdef __CUDACC__
   cuda_check (cudnnCreateTensorDescriptor (&srcDesc_));
   cuda_check (cudnnCreateTensorDescriptor (&dstDesc_));
-  src_.setTensor4dDescriptor (srcDesc_);
-  dst_.setTensor4dDescriptor (dstDesc_);
+  src_.setTensor4dDesc (srcDesc_);
+  dst_.setTensor4dDesc (dstDesc_);
 #endif
 }
 
