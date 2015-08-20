@@ -1,4 +1,3 @@
-#include <cuda.h>
 #include <gflags/gflags.h>
 
 #include "include/tensor.h"
@@ -11,7 +10,7 @@ DEFINE_string (config, "config/imagenet112_conv_08.cfg", "config file");
 int main (int argc, char** argv)
 { fLB::FLAGS_colorlogtostderr = true;
   google::ParseCommandLineFlags (&argc, &argv, true);
-  GLogHelper glogh (argv[0], "/home/liuminxu/log/nnetMain.");
+  GLogHelper glogh (argv[0], "/home/xxxxxx/log/nnetMain.");
 //srand ((unsigned)time(NULL));
 //omp_set_num_threads (4);
 //mkl_set_num_threads (4);
