@@ -93,16 +93,16 @@ void Random<CPU>::uniform  (float *data, int size, const float  a, const float b
 
 
 template <typename XPU, typename DT>
-void Tensor<XPU, DT>::init (const Random<XPU> &random, const int rand_method, const DT a,  const DT b)
-{ if      (rand_method == GAUSSIAN)
+void Tensor<XPU, DT>::init (const Random<XPU> &random, const int method, const DT a,  const DT b)
+{ if      (method == GAUSSIAN)
     random.gaussian (dptr, size(), a, b);
-  else if (rand_method == UNIFORM)
+  else if (method == UNIFORM)
     random.uniform  (dptr, size(), a, b);
 }
 #ifdef __CUDACC__
-template void TensorGPUf::init (const Random<GPU> &random, const int rand_method, const float a,  const float b);
+template void TensorGPUf::init (const Random<GPU> &random, const int method, const float a,  const float b);
 #else
-template void TensorCPUf::init (const Random<CPU> &random, const int rand_method, const float a,  const float b);
+template void TensorCPUf::init (const Random<CPU> &random, const int method, const float a,  const float b);
 #endif
 
 template <typename XPU, typename DT>
