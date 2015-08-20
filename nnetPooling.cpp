@@ -13,7 +13,7 @@ enum pool_t
 
 
 #ifdef __CUDACC__
-void ParaLayer::setPoolingDescriptor (cudnnPoolingDescriptor_t &desc)
+void ParaLayer::setPoolingDesc (cudnnPoolingDescriptor_t &desc)
 { cuda_check (cudnnSetPooling2dDescriptor (desc, pool == AVE ?
     CUDNN_POOLING_AVERAGE_COUNT_EXCLUDE_PADDING : CUDNN_POOLING_MAX, ksize, ksize, pad, pad, stride, stride));
 }
@@ -84,11 +84,11 @@ LAYER_INIT (LayerPooling)
   cuda_check (cudnnCreateTensorDescriptor  (&sdstDesc_));
   cuda_check (cudnnCreatePoolingDescriptor (&poolDesc_));
 
-  src_.setTensor4dDescriptor (srcDesc_);
-  dst_.setTensor4dDescriptor (dstDesc_);
-   pl_.setPoolingDescriptor (poolDesc_);
-  src_.section(0, secn_).setTensor4dDescriptor (ssrcDesc_);
-  dst_.section(0, secn_).setTensor4dDescriptor (sdstDesc_);
+  src_.setTensor4dDesc (srcDesc_);
+  dst_.setTensor4dDesc (dstDesc_);
+   pl_.setPoolingDesc (poolDesc_);
+  src_.section(0, secn_).setTensor4dDesc (ssrcDesc_);
+  dst_.section(0, secn_).setTensor4dDesc (sdstDesc_);
 #endif
 }
 
