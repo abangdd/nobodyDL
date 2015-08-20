@@ -9,7 +9,7 @@ std::vector<XPUCtx*> dnnctx;
 void XPUCtx::release ()
 { printf ("Device\t%d\treleasing\n",    did_);
   cuda_check (cudaSetDevice (did_));
-//cuda_check (cublasShutdown ());
+
   cuda_check (cublasDestroy (cublas_));
   cuda_check (cudnnDestroy  (cudnn_));
   cuda_check (curandDestroyGenerator (curand_));
@@ -22,14 +22,12 @@ void XPUCtx::reset ()
   cuda_check (cudaSetDevice (did_));
   cuda_check (cudaDeviceReset ());
 
-//cuda_check (cublasInit ());
   cuda_check (cublasCreate (&cublas_));
   cuda_check (cudnnCreate  (&cudnn_));
   cuda_check (curandCreateGenerator (&curand_, CURAND_RNG_PSEUDO_DEFAULT));
   cuda_check (cudaStreamCreate (&stream_));
   cuda_check (cudaEventCreateWithFlags (&accept_, cudaEventDisableTiming));
 
-//cuda_check (cublasSetKernelStream (stream_));
   cuda_check (cublasSetStream (cublas_, stream_));
   cuda_check (curandSetStream (curand_, stream_));
   cuda_check (cudnnSetStream  (cudnn_,  stream_));
