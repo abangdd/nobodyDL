@@ -220,7 +220,7 @@ public:
   vector<ParaOptim> paraBias_;
   TensorFormat tFormat_;
   ParaFileData dataTrain_;
-  ParaFileData dataTest_;
+  ParaFileData dataPredt_;
   ParaModel model_;
   Shape shape_src, shape_dst;
   string dataType;
@@ -263,7 +263,7 @@ public:
   vector<vector<Tensor<XPU, float>>> nodes_;
   vector<DataBatch<XPU, float>>      batch_;
   vector<DataBuffer<float>> train_;
-  vector<DataBuffer<float>>  test_;
+  vector<DataBuffer<float>> predt_;
 };
 
 #endif
