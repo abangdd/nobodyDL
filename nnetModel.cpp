@@ -7,7 +7,7 @@
 template <typename XPU>
 void NNetModel<XPU>::init_model ()
 { train_. resize (para_.num_nnets);
-   test_. resize (para_.num_nnets);
+  predt_. resize (para_.num_nnets);
   batch_. resize (para_.num_nnets);
   nodes_. resize (para_.num_nnets);
   layers_.resize (para_.num_nnets);
@@ -59,16 +59,16 @@ void NNetModel<XPU>::init_data ()
   { cuda_set_device (did);
 
     train_[did].create (para_.tFormat_, did);
-     test_[did].create (para_.tFormat_, did);
+    predt_[did].create (para_.tFormat_, did);
     train_[did].read (para_.dataTrain_);
-     test_[did].read (para_.dataTest_);
+    predt_[did].read (para_.dataPredt_);
     train_[did].read_stats (para_.dataTrain_);
-     test_[did].read_stats (para_.dataTest_);
+    predt_[did].read_stats (para_.dataPredt_);
     train_[did].data_.sub_mean (train_[did].mean_);
-     test_[did].data_.sub_mean ( test_[did].mean_);
+    predt_[did].data_.sub_mean (predt_[did].mean_);
 #ifdef __CUDACC__
     train_[did].page_lock ();
-     test_[did].page_lock ();
+    predt_[did].page_lock ();
 #endif
   }
 
@@ -77,9 +77,9 @@ void NNetModel<XPU>::init_data ()
   dataIm_.init (para_.dataTrain_);
   for (int did = para_.min_device; did <= para_.max_device; ++did)
   { train_[did].dataIm_.init (dataIm_, did - para_.min_device, para_.num_device);
-     test_[did].dataIm_.init (para_.dataTest_);
+    predt_[did].dataIm_.init (para_.dataPredt_);
     train_[did].set_image_lnums ();
-     test_[did].set_image_lnums ();
+    predt_[did].set_image_lnums ();
   }
 }
 template void NNetModel<GPU>::init_data ();
@@ -227,7 +227,7 @@ void NNetModel<XPU>::train_epoch (DataBuffer<float> &buffer, DataBatch<XPU, floa
       reader.join ();
 
     if ((i+1) % (numBuffers/numEvals) == 0)
-    { eval_epoch ( test_[did], batch, did);
+    { eval_epoch (predt_[did], batch, did);
       save_model (did);
     }
   }
