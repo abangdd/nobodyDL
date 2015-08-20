@@ -63,6 +63,21 @@ void bgr_normalize (Mat &src)
   merge (chlVtr, src);
 }
 
+void bgr_jitter (Mat &src)
+{ vector<Mat> chlVtr;
+  split (src, chlVtr);
+  for (int i = 0; i < 3; ++i)
+  { double minVal = 0, maxVal = 0; 
+    minMaxLoc (chlVtr[i], &minVal, &maxVal, 0, 0);
+    double midVal = (maxVal + minVal) / 2;
+    double subVal = (maxVal - minVal) / 2;
+    minVal = cv::saturate_cast<uchar> (midVal - subVal * (rand() % 21 + 90) / 100);
+    maxVal = cv::saturate_cast<uchar> (midVal + subVal * (rand() % 21 + 90) / 100);
+    normalize (chlVtr[i], chlVtr[i], minVal, maxVal, cv::NORM_MINMAX);
+  }
+  merge (chlVtr, src);
+}
+
 void pre_process (Mat &src, const TensorFormat &tf, const TensorCPUf &mean)
 { src.convertTo (src, CV_32FC3, 1.f/255);
   mkl_set_num_threads_local (1);
@@ -164,11 +179,11 @@ void image_resize (const ParaImage &para, const string &fsrc, const string &fdst
   cv::imwrite(fdst, idst);
 }
 
-void image_resize (const ParaImage &para, const string &folder_src, const string &folder_dst, const string &suffix)
-{ vector<string> srcList;  get_dir_list (folder_src, -1, srcList);
+void image_resize (const ParaImage &para, const string &srcRoot, const string &dstRoot, const string &suffix)
+{ vector<string> srcList;  get_dir_list (srcRoot, -1, srcList);
   vector<string> dstList;  dstList = srcList;
   for (size_t i = 0; i < srcList.size(); i++)
-  { dstList[i].replace (0, folder_src.length(), folder_dst);
+  { dstList[i].replace (0, srcRoot.length(), dstRoot);
     if (access (dstList[i].c_str(), F_OK) != 0)
       CHECK (mkdir (dstList[i].c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == 0);
 
