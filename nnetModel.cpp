@@ -12,6 +12,8 @@ void NNetModel<XPU>::init_model ()
   nodes_. resize (para_.num_nnets);
   layers_.resize (para_.num_nnets);
   optims_.resize (para_.num_nnets);
+  trErr_. resize (para_.num_nnets);
+  prErr_. resize (para_.num_nnets);
   for (int did = para_.min_device; did <= para_.max_device; ++did)
   { cuda_set_device (did);
     mem_free (did);
@@ -38,8 +40,8 @@ void NNetModel<XPU>::init_model ()
         j++;
       }
 
-    para_.paraWmat_[0]                 .get_optim_info ();
-    para_.paraWmat_[para_.num_optims-1].get_optim_info ();
+    para_.paraWmat_[0].get_optim_info ();
+    para_.paraBias_[0].get_optim_info ();
 
     batch_[did].data_  = nodes_[did][0];
     batch_[did].pred_  = nodes_[did][para_.num_nodes - 2];
@@ -203,6 +205,7 @@ void NNetModel<XPU>::train_epoch (DataBuffer<float> &buffer, DataBatch<XPU, floa
   std::thread reader;
   std::random_shuffle (buffer.dataIm_.imgList.begin(), buffer.dataIm_.imgList.end());
 
+  trErr_[did] = 0.f;
   for (int i = 0; i < numBuffers; ++i)
   { para_.tFormat_.isTrain = true;
     if (para_.dataType == "image")
@@ -217,6 +220,7 @@ void NNetModel<XPU>::train_epoch (DataBuffer<float> &buffer, DataBatch<XPU, floa
       else
         batch.rand (buffer);
       fprop (did, true);
+      batch.send (buffer);
       bprop (did);
 
       reduce_gmat (did);
@@ -225,10 +229,13 @@ void NNetModel<XPU>::train_epoch (DataBuffer<float> &buffer, DataBatch<XPU, floa
     }
     if (para_.dataType == "image")
       reader.join ();
+    buffer.evaluate (trErr_[did]);
 
     if ((i+1) % (numBuffers/numEvals) == 0)
-    { eval_epoch (predt_[did], batch, did);
+    { trErr_[did] /= i+1;
+      eval_epoch (predt_[did], batch, did);
       save_model (did);
+      trErr_[did] *= i+1;
     }
   }
 }
@@ -241,7 +248,7 @@ void NNetModel<XPU>::eval_epoch (DataBuffer<float> &buffer, DataBatch<XPU, float
   std::thread reader;
   std::random_shuffle (buffer.dataIm_.imgList.begin(), buffer.dataIm_.imgList.end());
 
-  float test_err = 0.f;
+  prErr_[did] = 0.f;
   for (int i = 0; i < numBuffers; ++i)
   { para_.tFormat_.isTrain = false;
     if (para_.dataType == "image")
@@ -258,9 +265,10 @@ void NNetModel<XPU>::eval_epoch (DataBuffer<float> &buffer, DataBatch<XPU, float
     }
     if (para_.dataType == "image")
       reader.join ();
-    buffer.evaluate (test_err);
+    buffer.evaluate (prErr_[did]);
   }
-  LOG (INFO) << "\tGPU  " << did << "\ttest_err\t" << test_err / numBuffers;
+  char errstr[64];  sprintf (errstr, "\ttrain\t%.4f\tpredt\t%.4f", trErr_[did], prErr_[did] / numBuffers);
+  LOG (INFO) << "\tGPU  " << did << errstr;
 }
 
 #endif
