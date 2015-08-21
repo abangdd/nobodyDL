@@ -264,6 +264,8 @@ public:
   vector<DataBatch<XPU, float>>      batch_;
   vector<DataBuffer<float>> train_;
   vector<DataBuffer<float>> predt_;
+  vector<float> trainErr_;
+  vector<float> predtErr_;
 };
 
 #endif
