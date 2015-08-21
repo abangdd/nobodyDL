@@ -32,7 +32,8 @@ public:
   int pool;
   int loss;
   bool isLoad, isFixed;
-  float sigma, dropout;
+  float sigma, norm;
+  float dropout;
 };
 
 
