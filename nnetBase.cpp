@@ -60,7 +60,7 @@ void ParaNNet::config (const libconfig::Config &cfg)
   Setting
   &isLoad	= cfg.lookup ("model.isLoad"),
   &isFixed	= cfg.lookup ("model.isFixed"),
-  &sigma	= cfg.lookup ("model.sigma"),
+  &norm		= cfg.lookup ("model.norm"),
   &random	= cfg.lookup ("model.rand_t");
 
   float epsW	= cfg.lookup ("optim.epsW");
@@ -89,7 +89,7 @@ void ParaNNet::config (const libconfig::Config &cfg)
     if (pl.type == kConvolution || pl.type == kFullConn)
     { pl.isLoad	= isLoad[j];
       pl.isFixed= isFixed[j];
-      pl.sigma	= sigma[j];
+      pl.norm	= norm[j];
       pl.random	= random[j];
       j++;
     }
@@ -181,8 +181,8 @@ template LayerBase<CPU>* create_layer (ParaLayer &pl, const int did, TensorCPUf 
 
 template <typename XPU>
 void LayerBase<XPU>::get_model_info ()
-{ char pszstr[8];  sprintf (pszstr, "%.2f", pl_.sigma);
-  LOG (INFO) << "\tModel initialized\t" << pl_.get_layer_type() << "\t" << atof (pszstr);
+{ char pszstr[16];  sprintf (pszstr, "\t%.2f\t%g", pl_.sigma, pl_.norm);
+  LOG (INFO) << "\tModel initialized\t" << pl_.get_layer_type() << pszstr;
 }
 template void LayerBase<GPU>::get_model_info ();
 template void LayerBase<CPU>::get_model_info ();
