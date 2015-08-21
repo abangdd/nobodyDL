@@ -12,8 +12,8 @@ void NNetModel<XPU>::init_model ()
   nodes_. resize (para_.num_nnets);
   layers_.resize (para_.num_nnets);
   optims_.resize (para_.num_nnets);
-  trErr_. resize (para_.num_nnets);
-  prErr_. resize (para_.num_nnets);
+  trainErr_.resize (para_.num_nnets);
+  predtErr_.resize (para_.num_nnets);
   for (int did = para_.min_device; did <= para_.max_device; ++did)
   { cuda_set_device (did);
     mem_free (did);
@@ -205,7 +205,7 @@ void NNetModel<XPU>::train_epoch (DataBuffer<float> &buffer, DataBatch<XPU, floa
   std::thread reader;
   std::random_shuffle (buffer.dataIm_.imgList.begin(), buffer.dataIm_.imgList.end());
 
-  trErr_[did] = 0.f;
+  trainErr_[did] = 0.f;
   for (int i = 0; i < numBuffers; ++i)
   { para_.tFormat_.isTrain = true;
     if (para_.dataType == "image")
@@ -229,13 +229,13 @@ void NNetModel<XPU>::train_epoch (DataBuffer<float> &buffer, DataBatch<XPU, floa
     }
     if (para_.dataType == "image")
       reader.join ();
-    buffer.evaluate (trErr_[did]);
+    buffer.evaluate (trainErr_[did]);
 
     if ((i+1) % (numBuffers/numEvals) == 0)
-    { trErr_[did] /= i+1;
+    { trainErr_[did] /= i+1;
       eval_epoch (predt_[did], batch, did);
       save_model (did);
-      trErr_[did] *= i+1;
+      trainErr_[did] *= i+1;
     }
   }
 }
@@ -248,7 +248,7 @@ void NNetModel<XPU>::eval_epoch (DataBuffer<float> &buffer, DataBatch<XPU, float
   std::thread reader;
   std::random_shuffle (buffer.dataIm_.imgList.begin(), buffer.dataIm_.imgList.end());
 
-  prErr_[did] = 0.f;
+  predtErr_[did] = 0.f;
   for (int i = 0; i < numBuffers; ++i)
   { para_.tFormat_.isTrain = false;
     if (para_.dataType == "image")
@@ -265,9 +265,9 @@ void NNetModel<XPU>::eval_epoch (DataBuffer<float> &buffer, DataBatch<XPU, float
     }
     if (para_.dataType == "image")
       reader.join ();
-    buffer.evaluate (prErr_[did]);
+    buffer.evaluate (predtErr_[did]);
   }
-  char errstr[64];  sprintf (errstr, "\ttrain\t%.4f\tpredt\t%.4f", trErr_[did], prErr_[did] / numBuffers);
+  char errstr[64];  sprintf (errstr, "\ttrain\t%.4f\tpredt\t%.4f", trainErr_[did], predtErr_[did] / numBuffers);
   LOG (INFO) << "\tGPU  " << did << errstr;
 }
 
