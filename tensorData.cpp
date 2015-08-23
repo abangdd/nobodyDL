@@ -103,7 +103,9 @@ template void DataBuffer<float>::read_stats  (const ParaFileData &pd);
 
 template <>
 void DataBuffer<float>::read_image_thread (const TensorFormat &format)
-{ reset_data ();
+{ if (!lnums_)
+    return;
+  reset_data ();
   if (curr_no_ + dnums_ > lnums_)
     curr_no_ = 0;
   for (inums_ = 0; inums_ < dnums_; inums_ += nthd)
@@ -119,7 +121,9 @@ void DataBuffer<float>::read_image_thread (const TensorFormat &format)
 
 template <>
 void DataBuffer<float>::read_image_openmp (const TensorFormat &format)
-{ reset_data ();
+{ if (!lnums_)
+    return;
+  reset_data ();
   if (curr_no_ + dnums_ > lnums_)
     curr_no_ = 0;
 #pragma omp parallel for
