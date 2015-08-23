@@ -103,7 +103,7 @@ template void DataBuffer<float>::read_stats  (const ParaFileData &pd);
 
 template <>
 void DataBuffer<float>::read_image_thread (const TensorFormat &format)
-{ if (!lnums_)
+{ if (!dataIm_.imgList.size())
     return;
   reset_data ();
   if (curr_no_ + dnums_ > lnums_)
@@ -121,7 +121,7 @@ void DataBuffer<float>::read_image_thread (const TensorFormat &format)
 
 template <>
 void DataBuffer<float>::read_image_openmp (const TensorFormat &format)
-{ if (!lnums_)
+{ if (!dataIm_.imgList.size())
     return;
   reset_data ();
   if (curr_no_ + dnums_ > lnums_)
