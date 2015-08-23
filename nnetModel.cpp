@@ -208,8 +208,7 @@ void NNetModel<XPU>::train_epoch (DataBuffer<float> &buffer, DataBatch<XPU, floa
   trainErr_[did] = 0.f;
   for (int i = 0; i < numBuffers; ++i)
   { para_.tFormat_.isTrain = true;
-    if (para_.dataType == "image")
-      reader = std::thread (&DataBuffer<float>::read_image_thread, &buffer, std::ref(para_.tFormat_));
+    reader = std::thread (&DataBuffer<float>::read_image_thread, &buffer, std::ref(para_.tFormat_));
 
     batch.reset ();
     for (int j = 0; j < numBatches; ++j)
@@ -227,8 +226,7 @@ void NNetModel<XPU>::train_epoch (DataBuffer<float> &buffer, DataBatch<XPU, floa
       update_wmat (did);
       batch.next (buffer);
     }
-    if (para_.dataType == "image")
-      reader.join ();
+    reader.join ();
     buffer.evaluate (trainErr_[did]);
 
     if ((i+1) % (numBuffers/numEvals) == 0)
@@ -251,8 +249,7 @@ void NNetModel<XPU>::eval_epoch (DataBuffer<float> &buffer, DataBatch<XPU, float
   predtErr_[did] = 0.f;
   for (int i = 0; i < numBuffers; ++i)
   { para_.tFormat_.isTrain = false;
-    if (para_.dataType == "image")
-      reader = std::thread (&DataBuffer<float>::read_image_thread, &buffer, std::ref(para_.tFormat_));
+    reader = std::thread (&DataBuffer<float>::read_image_thread, &buffer, std::ref(para_.tFormat_));
 
     batch.reset ();
     for (int j = 0; j < numBatches; ++j)
@@ -263,8 +260,7 @@ void NNetModel<XPU>::eval_epoch (DataBuffer<float> &buffer, DataBatch<XPU, float
       batch.send (buffer);
       batch.next (buffer);
     }
-    if (para_.dataType == "image")
-      reader.join ();
+    reader.join ();
     buffer.evaluate (predtErr_[did]);
   }
   char errstr[64];  sprintf (errstr, "\ttrain\t%.4f\tpredt\t%.4f", trainErr_[did], predtErr_[did] / numBuffers);
