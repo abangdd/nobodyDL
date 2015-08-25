@@ -5,8 +5,8 @@
 
 template <typename XPU, typename DT>
 bool OptimBase<XPU, DT>::line_search_backtracking (SparseBuffer<XPU, DT> &buffer, const Tensor<XPU, DT> &dir,
-  const Tensor<XPU, DT> &wvec_b, int &evals, int maxEvals)
-{ int count = 0;
+  const Tensor<XPU, DT> &wvec_b, int maxEvals)
+{ int evals = 0;
   DT rho = 0;
   const DT dec = 0.5;
   const DT inc = 2.1;
@@ -30,7 +30,7 @@ bool OptimBase<XPU, DT>::line_search_backtracking (SparseBuffer<XPU, DT> &buffer
     get_eval (buffer, f_phi_alpha);
     gmat_.blas_sdot (dir, d_phi_alpha);
 
-    ++count;
+    ++evals;
 
     const bool armijo_violated = f_phi_alpha > f_phi_0 + c1 * step_length * d_phi_0;
 
@@ -45,7 +45,7 @@ bool OptimBase<XPU, DT>::line_search_backtracking (SparseBuffer<XPU, DT> &buffer
       return true;
     }
 
-    if (count >= maxEvals)
+    if (evals >= maxEvals)
     { LOG (WARNING) << "\tOPTIM_REACHED_MAX_EVALS";
       return false;
     }
@@ -54,15 +54,11 @@ bool OptimBase<XPU, DT>::line_search_backtracking (SparseBuffer<XPU, DT> &buffer
   }
 }
 #ifdef __CUDACC__
-template bool OptimBaseGPUf::line_search_backtracking (SBufferGPUf &buffer, const TensorGPUf &dir,
-  const TensorGPUf &wvec_b, int &evals, int maxEvals);
-template bool OptimBaseGPUd::line_search_backtracking (SBufferGPUd &buffer, const TensorGPUd &dir,
-  const TensorGPUd &wvec_b, int &evals, int maxEvals);
+template bool OptimBaseGPUf::line_search_backtracking (SBufferGPUf &buffer, const TensorGPUf &dir, const TensorGPUf &wvec_b, int maxEvals);
+template bool OptimBaseGPUd::line_search_backtracking (SBufferGPUd &buffer, const TensorGPUd &dir, const TensorGPUd &wvec_b, int maxEvals);
 #else
-template bool OptimBaseCPUf::line_search_backtracking (SBufferCPUf &buffer, const TensorCPUf &dir,
-  const TensorCPUf &wvec_b, int &evals, int maxEvals);
-template bool OptimBaseCPUd::line_search_backtracking (SBufferCPUd &buffer, const TensorCPUd &dir,
-  const TensorCPUd &wvec_b, int &evals, int maxEvals);
+template bool OptimBaseCPUf::line_search_backtracking (SBufferCPUf &buffer, const TensorCPUf &dir, const TensorCPUf &wvec_b, int maxEvals);
+template bool OptimBaseCPUd::line_search_backtracking (SBufferCPUd &buffer, const TensorCPUd &dir, const TensorCPUd &wvec_b, int maxEvals);
 #endif
 
 #endif
