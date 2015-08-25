@@ -12,7 +12,7 @@ enum optim_t
 class ParaOptim {
 public:
   explicit ParaOptim ();
-  int get_optim_type (const char *t);
+  int  get_optim_type (const char *t);
   void get_optim_info ();
   void set_lrate (const int epoch, const int max_round);
 public:
@@ -48,8 +48,7 @@ public:
   void get_grad (SparseTensor<XPU, DT> &data, Tensor<XPU, DT> &label);
   void get_grad (SparseBuffer<XPU, DT> &buffer);
   void get_eval (SparseBuffer<XPU, DT> &buffer, DT &loss);
-  bool line_search_backtracking (SparseBuffer<XPU, DT> &buffer, const Tensor<XPU, DT> &dir,
-    const Tensor<XPU, DT> &wvec_b, int &evals, int maxEvals);
+  bool line_search_backtracking (SparseBuffer<XPU, DT> &buffer, const Tensor<XPU, DT> &dir, const Tensor<XPU, DT> &wvec_b, int maxEvals);
 public:
   ParaOptim &para_;
   int did_;
