@@ -92,7 +92,7 @@ public:
   void copy (const Tensor<CPU, DT> &in);
   Tensor<XPU, DT> section (const int begin, const int end) const;
   Tensor<XPU, DT> operator[] (const int idx) const { return section (idx, idx+1);  }
-  const Tensor<XPU, DT>& operator= (const Tensor<XPU, DT>& t);
+  Tensor<XPU, DT>& operator= (const Tensor<XPU, DT> &t);
 private:
   void mem_alloc();
   void mem_free ();
@@ -190,7 +190,7 @@ template <typename DT>
 class DataBuffer {
 public:
   explicit DataBuffer () : rand_(0), did_(0), curr_no_(0), dnums_(0), lnums_(0), inums_(0) { }
-  void reset_data ();
+  void reset_image_buf ();
   void create (const TensorFormat &tf, const int did);
   void page_lock ();
   void page_unlk ();
