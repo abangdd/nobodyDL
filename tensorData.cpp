@@ -64,13 +64,15 @@ void DataBuffer<DT>::page_unlk ()
 template void DataBuffer<float>::page_unlk ();
 #else
 template <typename DT>
-void DataBuffer<DT>::reset_data ()
-{ inums_ = 0;
+void DataBuffer<DT>::reset_image_buf ()
+{ if (dataIm_.imgList.empty())
+    return;
    data_.mem_set (0);
    pred_.mem_set (0);
   label_.mem_set (0);
+  inums_ = 0;
 }
-template void DataBuffer<float>::reset_data ();
+template void DataBuffer<float>::reset_image_buf ();
 
 template <typename DT>
 void DataBuffer<DT>::create (const TensorFormat &tf, const int did)
@@ -105,7 +107,6 @@ template <>
 void DataBuffer<float>::read_image_thread (const TensorFormat &format)
 { if (dataIm_.imgList.empty())
     return;
-  reset_data ();
   if (curr_no_ + dnums_ > lnums_)
     curr_no_ = 0;
   for (inums_ = 0; inums_ < dnums_; inums_ += nthd)
@@ -123,7 +124,6 @@ template <>
 void DataBuffer<float>::read_image_openmp (const TensorFormat &format)
 { if (dataIm_.imgList.empty())
     return;
-  reset_data ();
   if (curr_no_ + dnums_ > lnums_)
     curr_no_ = 0;
 #pragma omp parallel for
