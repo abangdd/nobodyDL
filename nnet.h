@@ -176,7 +176,7 @@ public:
   LAYER_MEMBER;
 private:
   Tensor<XPU, float> mask;
-  float drop_, scal_;
+  float scal_;
 };
 
 template <typename XPU>
