@@ -14,7 +14,7 @@ public:
   explicit ParaOptim ();
   int  get_optim_type (const char *t);
   void get_optim_info ();
-  void set_lrate (const int epoch, const int max_round);
+  void set_para (const int epoch, const int max_round);
 public:
   int type;
   int algo;
@@ -31,7 +31,7 @@ template <typename XPU, typename DT>
 class OptimBase {
 public:
   explicit OptimBase (ParaOptim &po, const int did, Tensor<XPU, DT> &weight, Tensor<XPU, DT> &wgrad) :
-    para_(po), did_(did), wmat_(weight), gmat_(wgrad) { }
+    po_(po), did_(did), wmat_(weight), gmat_(wgrad) { }
   virtual ~OptimBase () { }
   virtual void update () = 0;
   virtual void get_direction (const int k) = 0;
@@ -50,7 +50,7 @@ public:
   void get_eval (SparseBuffer<XPU, DT> &buffer, DT &loss);
   bool line_search_backtracking (SparseBuffer<XPU, DT> &buffer, const Tensor<XPU, DT> &dir, const Tensor<XPU, DT> &wvec_b, int maxEvals);
 public:
-  ParaOptim &para_;
+  ParaOptim &po_;
   int did_;
   Tensor<XPU, DT> &wmat_, &gmat_;
   Tensor<XPU, DT> dloss_;
@@ -79,7 +79,7 @@ public:
   void update_nag ();
   void optimize (SparseBuffer<XPU, DT> &buffer);
 private:
-  ParaOptim &para_;
+  ParaOptim &po_;
   int did_;
   Tensor<XPU, DT> &wmat_, &gmat_;
   Tensor<XPU, DT>  mmat_,  hmat_;
