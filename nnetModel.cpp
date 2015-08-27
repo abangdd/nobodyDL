@@ -205,13 +205,13 @@ void NNetModel<XPU>::train_epoch (DataBuffer<float> &buffer, DataBatch<XPU, floa
   const int mini_batch = para_.tFormat_.nums;
   const int numBatches = buffer.dnums_ / batch .dnums_;
   const int numBuffers = buffer.lnums_ / buffer.dnums_;
-  para_.tFormat_.isTrain = true;
   std::thread reader;
   std::random_shuffle (buffer.dataIm_.imgList.begin(), buffer.dataIm_.imgList.end());
 
   trainErr_[did] = 0.f;
   for (int i = 0; i < numBuffers; ++i)
-  { buffer.reset_image_buf ();
+  { para_.tFormat_.isTrain = true;
+    buffer.reset_image_buf ();
     reader = std::thread (&DataBuffer<float>::read_image_thread, &buffer, std::ref(para_.tFormat_));
 
     batch.reset ();
@@ -221,7 +221,7 @@ void NNetModel<XPU>::train_epoch (DataBuffer<float> &buffer, DataBatch<XPU, floa
         batch.copy (buffer);
       else
         batch.rand (buffer);
-      fprop (did, para_.tFormat_.isTrain);
+      fprop (did, true);
       batch.send (buffer);
       bprop (did);
 
@@ -246,20 +246,20 @@ void NNetModel<XPU>::eval_epoch (DataBuffer<float> &buffer, DataBatch<XPU, float
 { const int mini_batch = para_.tFormat_.nums;
   const int numBatches = buffer.dnums_ / batch .dnums_;
   const int numBuffers = buffer.lnums_ / buffer.dnums_;
-  para_.tFormat_.isTrain = false;
   std::thread reader;
 //std::random_shuffle (buffer.dataIm_.imgList.begin(), buffer.dataIm_.imgList.end());
 
   predtErr_[did] = 0.f;
   for (int i = 0; i < numBuffers; ++i)
-  { buffer.reset_image_buf ();
+  { para_.tFormat_.isTrain = false;
+    buffer.reset_image_buf ();
     reader = std::thread (&DataBuffer<float>::read_image_thread, &buffer, std::ref(para_.tFormat_));
 
     batch.reset ();
     for (int j = 0; j < numBatches; ++j)
     { buffer.wait_image_buf ((j+1)*mini_batch);
       batch.copy (buffer);
-      fprop (did, para_.tFormat_.isTrain);
+      fprop (did, false);
       batch.send (buffer);
       batch.next (buffer);
     }
