@@ -1,6 +1,7 @@
 #ifndef NNET_H_
 #define NNET_H_
 
+#include <map>
 #include "tensor.h"
 #include "optimization.h"
 
@@ -20,9 +21,10 @@ enum layer_t
 
 class ParaLayer {
 public:
-  explicit ParaLayer () : isLoad(false), isFixed(false) { };
+  explicit ParaLayer () : isLoad(false), isFixed(false), sigma(0.01), norm(2.f), dropout(0.f) { };
   string get_layer_type ();
   void setPoolingDesc (cudnnPoolingDescriptor_t &desc);
+  void set_para (const int epoch, const int max_round);
   int type;
   int idxs, idxd;
   int ksize, pad, stride;
@@ -33,7 +35,7 @@ public:
   int loss;
   bool isLoad, isFixed;
   float sigma, norm;
-  float dropout;
+  float dbase, dropout;
 };
 
 
@@ -259,6 +261,7 @@ private:
 public:
   ParaNNet  para_;
   DataImage dataIm_;
+  std::map<int,int> mapLayerWmat_;
   vector<vector<LayerBase<XPU>*>>        layers_;
   vector<vector<OptimBase<XPU, float>*>> optims_;
   vector<vector<Tensor<XPU, float>>> nodes_;
