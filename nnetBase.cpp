@@ -18,7 +18,7 @@ string ParaLayer::get_layer_type ()
 }
 
 void ParaLayer::set_para (const int epoch, const int max_round)
-{ const float x = log (0.5f) / log (1.f/max_round);
+{ const float x = log (0.2f) / log (1.f/max_round);
   dropout = dbase * pow (1.f - (float)epoch/max_round, x);
 }
 
@@ -109,7 +109,7 @@ void ParaNNet::config (const libconfig::Config &cfg)
       paraLayer_.push_back (pl);
       idxn++;
     }
-    if (pl.dbase > 0)
+    if (pl.dbase > 0.)
     { pl.type	= kDropout;
       pl.idxs	= idxn;
       pl.idxd	= idxn+1;
