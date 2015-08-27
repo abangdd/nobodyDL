@@ -23,7 +23,7 @@ XPU_KERNEL(DropoutBackward) (const int num_kernels, const DT *dst, const DT *mas
 
 LAYER_FORWARD (LayerDropout)
 { const int N = dst_.size();
-  if (is_train && drop_ >= 0.1f)
+  if (is_train && drop_ > 0.01)
   { mask.init (rand_, UNIFORM, 0.f, 1.f);
     XPU_KERNEL_LAUNCH (DropoutForward,  cuda_get_blocks(N), CUDA_NUM_THREADS, 0, CUDNN_STREAM,
       N, src_.dptr, mask.dptr, drop_, scal_, dst_.dptr);
@@ -34,7 +34,7 @@ LAYER_FORWARD (LayerDropout)
 
 LAYER_BACKPROP (LayerDropout)
 { const int N = dst_.size();
-  if (is_prop_grad && drop_ >= 0.1f)
+  if (is_prop_grad && drop_ > 0.01)
   { XPU_KERNEL_LAUNCH (DropoutBackward, cuda_get_blocks(N), CUDA_NUM_THREADS, 0, CUDNN_STREAM,
       N, dst_.dptr, mask.dptr, drop_, scal_, src_.dptr);
     cuda_sync_check ("DropoutBackward");
@@ -45,7 +45,7 @@ LAYER_BACKPROP (LayerDropout)
 LAYER_INIT (LayerDropout)
 { dst_.create (src_.shape, did_);
   mask.create (src_.shape, did_);
-  drop_ = pl_.dropout;  CHECK (drop_ > 0 && drop_ < 1);
+  drop_ = pl_.dropout;  CHECK (drop_ < 1);
   scal_ = 1. / (1. - drop_);
 }
 
