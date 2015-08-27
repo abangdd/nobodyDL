@@ -34,7 +34,8 @@ void NNetModel<XPU>::init_model ()
   
     for (int i = 0, j = 0; i < para_.num_layers; ++i)
       if (para_.paraLayer_[i].type == kConvolution || para_.paraLayer_[i].type == kFullConn)
-      { layers_[did][i]->init_model ();
+      { mapLayerWmat_[i] = j;
+        layers_[did][i]->init_model ();
         layers_[did][i]->set_optimization (para_.paraWmat_[j], para_.paraBias_[j], optims_[did]);
         layers_[did][i]->get_model_info ();
         j++;
@@ -144,7 +145,7 @@ template <typename XPU>
 void NNetModel<XPU>::update_wmat (const int did)
 { cuda_set_device (did);
   for (int i = optims_[did].size()-1; i >= 0; --i)
-    if (!optims_[did][i]->para_.isFixed)
+    if (!optims_[did][i]->po_.isFixed)
     { if (did == para_.min_device)
       { optims_[did][i]->update ();
         optims_[did][i]->accept_notify ();
@@ -165,7 +166,7 @@ template <typename XPU>
 void NNetModel<XPU>::reduce_gmat (const int did)
 { cuda_set_device (did);
   for (int i = optims_[did].size()-1; i >= 0; --i)
-    if (!optims_[did][i]->para_.isFixed)
+    if (!optims_[did][i]->po_.isFixed)
     { for (int r = para_.num_device / 2; r > 0; r /= 2)
       { const int k1  = para_.num_device / r;
         const int pid = did + k1 / 2;
@@ -189,7 +190,9 @@ void NNetModel<XPU>::train ()
 #pragma omp parallel for
   for (int did = para_.min_device; did <= para_.max_device; ++did)
   { for (size_t i = 0; i < optims_[did].size(); ++i)
-      optims_[did][i]->para_.set_lrate (r, para_.max_round);
+      optims_[did][i]->po_.set_para (r, para_.max_round);
+    for (size_t i = 0; i < layers_[did].size(); ++i)
+      layers_[did][i]->pl_.set_para (r, para_.max_round);
     train_epoch (train_[did], batch_[did], did);
   }
 }
@@ -213,8 +216,7 @@ void NNetModel<XPU>::train_epoch (DataBuffer<float> &buffer, DataBatch<XPU, floa
 
     batch.reset ();
     for (int j = 0; j < numBatches; ++j)
-    { while (buffer.inums_ < (j+1)*mini_batch)
-        sleep (0.001);
+    { buffer.wait_image_buf ((j+1)*mini_batch);
       if (para_.dataType == "image")
         batch.copy (buffer);
       else
@@ -255,8 +257,7 @@ void NNetModel<XPU>::eval_epoch (DataBuffer<float> &buffer, DataBatch<XPU, float
 
     batch.reset ();
     for (int j = 0; j < numBatches; ++j)
-    { while (buffer.inums_ < (j+1)*mini_batch)
-        sleep (0.001);
+    { buffer.wait_image_buf ((j+1)*mini_batch);
       batch.copy (buffer);
       fprop (did, false);
       batch.send (buffer);
