@@ -17,6 +17,11 @@ string ParaLayer::get_layer_type ()
   }
 }
 
+void ParaLayer::set_para (const int epoch, const int max_round)
+{ const float x = log ((1e-2+FLT_EPSILON)/(dbase+FLT_EPSILON)) / log (1.f/max_round);
+  dropout = dbase * pow (1.f - (float)epoch/max_round, x);
+}
+
 int ParaNNet::get_layer_type (const char *t)
 { if (!strcmp (t, "conv"	)) return kConvolution;
   if (!strcmp (t, "dropout"	)) return kDropout;
@@ -83,7 +88,7 @@ void ParaNNet::config (const libconfig::Config &cfg)
 
     pl.neuron	= neuron[i];
     pl.pool	= pool[i];
-    pl.dropout	= dropout[i];
+    pl.dbase	= dropout[i];
     pl.loss	= loss[i];
 
     if (pl.type == kConvolution || pl.type == kFullConn)
@@ -104,7 +109,7 @@ void ParaNNet::config (const libconfig::Config &cfg)
       paraLayer_.push_back (pl);
       idxn++;
     }
-    if (pl.dropout > 0.)
+    if (pl.dbase > 0)
     { pl.type	= kDropout;
       pl.idxs	= idxn;
       pl.idxd	= idxn+1;
