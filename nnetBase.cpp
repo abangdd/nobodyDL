@@ -18,7 +18,7 @@ string ParaLayer::get_layer_type ()
 }
 
 void ParaLayer::set_para (const int epoch, const int max_round)
-{ const float x = log ((1e-2+FLT_EPSILON)/(dbase+FLT_EPSILON)) / log (1.f/max_round);
+{ const float x = log (0.5f) / log (1.f/max_round);
   dropout = dbase * pow (1.f - (float)epoch/max_round, x);
 }
 
