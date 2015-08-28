@@ -5,9 +5,10 @@
 
 #ifndef __CUDACC__
 string ParaLayer::get_layer_type ()
-{ switch (type)
+{ std::stringstream sstr;
+  switch (type)
   { case kConvolution	: return "Convolution";
-    case kDropout	: return "Dropout";
+    case kDropout	: sstr << dbase;  return "Dropout\t\t" + sstr.str();
     case kFullConn	: return "FullConn";
     case kLoss		: return "Loss";
     case kNeuron	: return "Neuron";
@@ -19,7 +20,7 @@ string ParaLayer::get_layer_type ()
 
 void ParaLayer::set_para (const int epoch, const int max_round)
 { const float x = log (0.2f) / log (1.f/max_round);
-  dropout = dbase * pow (1.f - (float)epoch/max_round, x);
+  dropout = dbase;
 }
 
 int ParaNNet::get_layer_type (const char *t)
