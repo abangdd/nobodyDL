@@ -17,13 +17,12 @@
 
 using std::vector;
 using std::string;
-using std::ios_base;
 using std::ifstream;
 using std::ofstream;
 
 class IFileStream {
 public:
-  explicit IFileStream (const string path, ios_base::openmode mode);
+  explicit IFileStream (const string path, std::ios_base::openmode mode);
   ~IFileStream();
   void read     (void *ptr, const int size);
   void read_lz4 (void *ptr, const int size);
@@ -36,7 +35,7 @@ public:
 
 class OFileStream {
 public:
-  explicit OFileStream (const string path, ios_base::openmode mode);
+  explicit OFileStream (const string path, std::ios_base::openmode mode);
   ~OFileStream();
   void write     (void *ptr, const int size);
   void write_lz4 (void *ptr, const int size);
@@ -128,11 +127,11 @@ public:
   int rows, cols;
 };
 
-class DataImage {
+class MetaImage {
 public:
   void init (const string &a, const string &b, const string &c);
   void init (const ParaFileData &pd);
-  void init (const DataImage &in, const int did, const int mod);
+  void init (const MetaImage &in, const int did, const int mod);
   void get_image_list ();
   void get_label_list ();
 public:
