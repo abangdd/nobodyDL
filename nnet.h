@@ -249,6 +249,7 @@ public:
   void init_model ();
   void init_data  ();
   void train ();
+  void trval ();
   void save_model (const int did);
   void load_model (const int did);
 private:
@@ -260,7 +261,7 @@ private:
   void update_wmat (const int did);
 public:
   ParaNNet  para_;
-  DataImage dataIm_;
+  MetaImage metaImage_;
   std::map<int,int> mapLayerWmat_;
   vector<vector<LayerBase<XPU>*>>        layers_;
   vector<vector<OptimBase<XPU, float>*>> optims_;
