@@ -84,8 +84,6 @@ void pre_process (Mat &src, const TensorFormat &tf, const TensorCPUf &mean)
   if (mean.dptr)
     for (int i = 0; i < 3; ++i)
       cblas_saxpy (src.rows*src.cols, -1.f, mean[i].dptr, 1, src.ptr<float>()+i, 3);
-//if (tf.isTrain)
-//  src += cv::Scalar (noise.dptr[0], noise.dptr[1], noise.dptr[2]);
   if (tf.isTrain && rand() % 2)
     flip (src, src, 1);
 }
@@ -97,8 +95,7 @@ void mat_2tensor (const Mat &src, TensorCPUf &dst)
 }
 
 template <>
-void TensorCPUf::read_image_data (const TensorFormat &tf, const string &file, const int idx,
-  const TensorCPUf &mean, const TensorCPUf &eigvec, const TensorCPUf &eigval, const Random<CPU> &random)
+void TensorCPUf::read_image_data (const TensorFormat &tf, const string &file, const int idx, const TensorCPUf &mean)
 { Mat src = cv::imread (file, 1);
   if (src.data == NULL)
   { LOG (WARNING) << "\timage is invalid\t" << file;
@@ -113,7 +110,8 @@ void TensorCPUf::read_image_data (const TensorFormat &tf, const string &file, co
     return;
   }
 
-  float crop_ratio = 1.f;
+  float crop_ratio = 1.f;  // (rand() % 21 + 80) / 100.f;
+  int interpolation = crop_ratio < 1 ? CV_INTER_CUBIC : CV_INTER_AREA;
   int crop_rows = tf.isTrain ? rows() * crop_ratio : rows();
   int crop_cols = tf.isTrain ? cols() * crop_ratio : cols();
   int  gap_rows = src.rows - crop_rows;
@@ -127,27 +125,16 @@ void TensorCPUf::read_image_data (const TensorFormat &tf, const string &file, co
 
   cv::Rect roi (x0, y0, crop_cols, crop_rows);
   Mat crop = src (roi);
-  if (tf.isTrain)
-  { if (crop_ratio < 1)  cv::resize (crop, crop, cv::Size(cols(), rows()), 0, 0, CV_INTER_CUBIC);
-    if (crop_ratio > 1)  cv::resize (crop, crop, cv::Size(cols(), rows()), 0, 0, CV_INTER_AREA);
-  }
-/*
-  TensorCPUf noise, coeff;
-  if (tf.isTrain)
-  { noise.create (eigval.shape);
-    coeff.create (eigval.shape);
-    coeff.init   (random, GAUSSIAN, 0.f, 1.f);
-    coeff.blas_vmul (coeff, eigval);
-    noise.blas_gemv (false, eigvec, coeff, 0.1, 0.f);
-  }
-*/
+  if (tf.isTrain && crop_ratio != 1)
+    cv::resize (crop, crop, cv::Size(cols(), rows()), 0, 0, interpolation);
+
   TensorCPUf dst = (*this)[idx];
   pre_process (crop, tf, mean);
   mat_2tensor (crop, dst);
 }
 
 template <>
-void TensorCPUf::read_image_label (const DataImage &dimg, const string &file, const int idx)
+void TensorCPUf::read_image_label (const MetaImage &dimg, const string &file, const int idx)
 { const string fname = file.substr (dimg.image_path.length ());
   auto got = dimg.label_map.find (fname);
   if (got == dimg.label_map.end ())
