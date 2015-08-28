@@ -77,10 +77,10 @@ void NNetModel<XPU>::init_data ()
 
   if (para_.dataType != "image")
     return;
-  dataIm_.init (para_.dataTrain_);
+  metaImage_.init (para_.dataTrain_);
   for (int did = para_.min_device; did <= para_.max_device; ++did)
-  { train_[did].dataIm_.init (dataIm_, did - para_.min_device, para_.num_device);
-    predt_[did].dataIm_.init (para_.dataPredt_);
+  { train_[did].image_.init (metaImage_, did - para_.min_device, para_.num_device);
+    predt_[did].image_.init (para_.dataPredt_);
     train_[did].set_image_lnums ();
     predt_[did].set_image_lnums ();
   }
@@ -200,13 +200,23 @@ template void NNetModel<GPU>::train ();
 template void NNetModel<CPU>::train ();
 
 template <typename XPU>
+void NNetModel<XPU>::trval ()
+{
+#pragma omp parallel for
+  for (int did = para_.min_device; did <= para_.max_device; ++did)
+     eval_epoch (train_[did], batch_[did], did);
+}
+template void NNetModel<GPU>::trval ();
+template void NNetModel<CPU>::trval ();
+
+template <typename XPU>
 void NNetModel<XPU>::train_epoch (DataBuffer<float> &buffer, DataBatch<XPU, float> &batch, const int did)
 { const int numEvals   = para_.num_evals;
   const int mini_batch = para_.tFormat_.nums;
   const int numBatches = buffer.dnums_ / batch .dnums_;
   const int numBuffers = buffer.lnums_ / buffer.dnums_;
   std::thread reader;
-  std::random_shuffle (buffer.dataIm_.imgList.begin(), buffer.dataIm_.imgList.end());
+  std::random_shuffle (buffer.image_.imgList.begin(), buffer.image_.imgList.end());
 
   trainErr_[did] = 0.f;
   for (int i = 0; i < numBuffers; ++i)
@@ -247,7 +257,7 @@ void NNetModel<XPU>::eval_epoch (DataBuffer<float> &buffer, DataBatch<XPU, float
   const int numBatches = buffer.dnums_ / batch .dnums_;
   const int numBuffers = buffer.lnums_ / buffer.dnums_;
   std::thread reader;
-//std::random_shuffle (buffer.dataIm_.imgList.begin(), buffer.dataIm_.imgList.end());
+//std::random_shuffle (buffer.image_.imgList.begin(), buffer.image_.imgList.end());
 
   predtErr_[did] = 0.f;
   for (int i = 0; i < numBuffers; ++i)
