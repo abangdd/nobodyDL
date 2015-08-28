@@ -106,9 +106,8 @@ public:
   void save (const string file);
   void load (const string file, const int did);
   void show_image (const int numc = 3);
-  void read_image_data (const TensorFormat &tf, const string &file, const int idx,
-    const Tensor<XPU, DT> &mean, const Tensor<XPU, DT> &eigvec, const Tensor<XPU, DT> &eigval, const Random<XPU> &random);
-  void read_image_label (const DataImage &dimg, const string &file, const int idx);
+  void read_image_data (const TensorFormat &tf, const string &file, const int idx, const Tensor<XPU, DT> &mean);
+  void read_image_label (const MetaImage &dimg, const string &file, const int idx);
   void read_image (const TensorFormat &tf, const vector<string> &imgList);
 public:
   void init (const DT a);
@@ -158,7 +157,6 @@ public:
   void bdcast_div (const Tensor<XPU, DT> &bin, const int keepdim);
   void get_mean (Tensor<XPU, DT> &mean) const;
   void sub_mean (const Tensor<XPU, DT> &mean);
-  void get_eigen(Tensor<XPU, DT> &eigvec, Tensor<XPU, DT> &eigval) const;
 public:
   int rows () const { return shape.rows;  }
   int cols () const { return shape.cols;  }
@@ -189,8 +187,9 @@ typedef Tensor<CPU, double> TensorCPUd;
 template <typename DT>
 class DataBuffer {
 public:
-  explicit DataBuffer () : rand_(0), did_(0), curr_no_(0), dnums_(0), lnums_(0), inums_(0) { }
+  explicit DataBuffer () : did_(0), curr_no_(0), dnums_(0), lnums_(0), inums_(0) { }
   void reset_image_buf ();
+  void  wait_image_buf (const int thr) { while (inums_ < thr)  sleep (0.001);  }
   void create (const TensorFormat &tf, const int did);
   void page_lock ();
   void page_unlk ();
@@ -199,7 +198,7 @@ public:
   void read_image_thread (const TensorFormat &tf);
   void read_image_openmp (const TensorFormat &tf);
   void read (const ParaFileData &pd);
-  void set_image_lnums () { lnums_ = dataIm_.imgList.size();  }
+  void set_image_lnums () { lnums_ = image_.imgList.size();  }
   void get_mean (const ParaFileData &pd, const TensorFormat &tf);
   void sampling (const ParaFileData &pd, const TensorFormat &tf, const int keepdim, Tensor<CPU, DT> &sample);
   void evaluate (DT &err);
@@ -208,11 +207,8 @@ public:
   Tensor<CPU, DT> data_;
   Tensor<CPU, DT> pred_;
   Tensor<CPU, DT> mean_;
-  Random<CPU>     rand_;
-  Tensor<CPU, DT> eigvec_;
-  Tensor<CPU, DT> eigval_;
   Tensor<CPU, DT> label_;
-  DataImage dataIm_;
+  MetaImage       image_;
   int did_;
   int curr_no_;
   int dnums_, lnums_, inums_;
