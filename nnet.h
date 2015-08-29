@@ -238,6 +238,7 @@ public:
   int stt_round;
   int end_round;
   int max_round;
+  int now_round;
 };
 
 template <typename XPU>
