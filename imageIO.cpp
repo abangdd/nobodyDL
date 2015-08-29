@@ -78,18 +78,8 @@ void bgr_jitter (Mat &src)
   merge (chlVtr, src);
 }
 
-void pre_process (Mat &src, const TensorFormat &tf, const TensorCPUf &mean)
+void mat_2tensor (Mat &src, TensorCPUf &dst)
 { src.convertTo (src, CV_32FC3, 1.f/255);
-  mkl_set_num_threads_local (1);
-  if (mean.dptr)
-    for (int i = 0; i < 3; ++i)
-      cblas_saxpy (src.rows*src.cols, -1.f, mean[i].dptr, 1, src.ptr<float>()+i, 3);
-  if (tf.isTrain && rand() % 2)
-    flip (src, src, 1);
-}
-
-void mat_2tensor (const Mat &src, TensorCPUf &dst)
-{ mkl_set_num_threads_local (1);
   for (int i = 0; i < 3; ++i)
     cblas_scopy (src.rows*src.cols, src.ptr<float>()+i, 3, dst[i].dptr, 1);
 }
@@ -127,10 +117,13 @@ void TensorCPUf::read_image_data (const TensorFormat &tf, const string &file, co
   Mat crop = src (roi);
   if (tf.isTrain && crop_ratio != 1)
     cv::resize (crop, crop, cv::Size(cols(), rows()), 0, 0, interpolation);
+  if (tf.isTrain && rand() % 2)
+    cv::flip   (crop, crop, 1);
 
   TensorCPUf dst = (*this)[idx];
-  pre_process (crop, tf, mean);
   mat_2tensor (crop, dst);
+  if (mean.dptr)
+    dst.blas_axpy (mean, -1);
 }
 
 template <>
