@@ -14,7 +14,7 @@ string ParaLayer::get_layer_type ()
     case kNeuron	: return "Neuron";
     case kPooling	: return "Pooling";
     case kSoftmax	: return "Softmax";
-    default		: LOG (FATAL) << "not known layer type";
+    default		: LOG (FATAL) << "unknown layer type";
   }
 }
 
@@ -31,7 +31,7 @@ int ParaNNet::get_layer_type (const char *t)
   if (!strcmp (t, "neuron"	)) return kNeuron;
   if (!strcmp (t, "softmax"	)) return kSoftmax;
   if (!strcmp (t, "pool"	)) return kPooling;
-  LOG (FATAL) << "not known layer type";
+  LOG (FATAL) << "unknown layer type";
   return 0;
 }
 
@@ -45,6 +45,7 @@ void ParaNNet::config (const libconfig::Config &cfg)
   stt_round  = cfg.lookup ("model.stt_round");
   end_round  = cfg.lookup ("model.end_round");
   max_round  = cfg.lookup ("model.max_round");
+  now_round  = 0;
   
   tFormat_	= TensorFormat (cfg);  tFormat_.numBatch /= num_device;
   dataTrain_	= ParaFileData (cfg, "traindata");
