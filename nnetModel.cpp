@@ -105,8 +105,7 @@ template void NNetModel<CPU>::mem_free (const int did);
 template <typename XPU>
 void NNetModel<XPU>::save_model (const int did)
 { cuda_set_device (did);
-  if (did != para_.min_device)
-    return;
+  if (did == para_.min_device)
   for (int i = 0; i < para_.num_layers; ++i)
   { char layerid[16];  sprintf (layerid, "%02d", i);
     layers_[did][i]->save_model (para_.model_.path+"_layer_"+layerid);
@@ -186,28 +185,21 @@ void NNetModel<XPU>::reduce_gmat (const int did)
 
 template <typename XPU>
 void NNetModel<XPU>::train ()
-{ for (int r = para_.stt_round; r < para_.end_round; ++r)
+{ for (para_.now_round = para_.stt_round; para_.now_round < para_.end_round; para_.now_round++)
 #pragma omp parallel for
   for (int did = para_.min_device; did <= para_.max_device; ++did)
   { for (size_t i = 0; i < optims_[did].size(); ++i)
-      optims_[did][i]->po_.set_para (r, para_.max_round);
+      optims_[did][i]->po_.set_para (para_.now_round, para_.max_round);
     for (size_t i = 0; i < layers_[did].size(); ++i)
-      layers_[did][i]->pl_.set_para (r, para_.max_round);
+      layers_[did][i]->pl_.set_para (para_.now_round, para_.max_round);
     train_epoch (train_[did], batch_[did], did);
   }
-}
-template void NNetModel<GPU>::train ();
-template void NNetModel<CPU>::train ();
-
-template <typename XPU>
-void NNetModel<XPU>::trval ()
-{
 #pragma omp parallel for
   for (int did = para_.min_device; did <= para_.max_device; ++did)
      eval_epoch (train_[did], batch_[did], did);
 }
-template void NNetModel<GPU>::trval ();
-template void NNetModel<CPU>::trval ();
+template void NNetModel<GPU>::train ();
+template void NNetModel<CPU>::train ();
 
 template <typename XPU>
 void NNetModel<XPU>::train_epoch (DataBuffer<float> &buffer, DataBatch<XPU, float> &batch, const int did)
@@ -249,6 +241,7 @@ void NNetModel<XPU>::train_epoch (DataBuffer<float> &buffer, DataBatch<XPU, floa
       trainErr_[did] *= i+1;
     }
   }
+  trainErr_[did] = 0.f;
 }
 
 template <typename XPU>
@@ -277,7 +270,7 @@ void NNetModel<XPU>::eval_epoch (DataBuffer<float> &buffer, DataBatch<XPU, float
     buffer.evaluate (predtErr_[did]);
   }
   char errstr[64];  sprintf (errstr, "\ttrain\t%.4f\tpredt\t%.4f", trainErr_[did], predtErr_[did] / numBuffers);
-  LOG (INFO) << "\tGPU  " << did << errstr;
+  LOG (INFO) << "\tGPU  " << did << "\tround  " << para_.now_round << errstr;
 }
 
 #endif
