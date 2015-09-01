@@ -148,7 +148,7 @@ template void TensorCPUd::create (const Shape &s, const int did);
 
 
 template <typename XPU, typename DT>
-Tensor<XPU, DT> Tensor<XPU, DT>::segment (const int begin, const int end) const
+Tensor<XPU, DT> Tensor<XPU, DT>::section (const int begin, const int end) const
 { Tensor<XPU, DT> t;  // TODO
     int slices = end - begin;    CHECK (slices >= 1);
     if      (shape.dims == 4)  { CHECK (slices <= nums());  t.shape = Shape (rows(), cols(), chls(), slices);  }
@@ -156,28 +156,30 @@ Tensor<XPU, DT> Tensor<XPU, DT>::segment (const int begin, const int end) const
     else                       { CHECK (slices <= rows());  t.shape = Shape (slices, cols(), chls(), nums());  }
 //  else                       { CHECK (shape.dims == 2 && begin == 0 && end == 1);  t.shape = shape;  }  // TODO
   t.dptr = dptr + (t.size() / slices) * begin;
-  return t;
+  return t;  // TODO
 }
 #ifndef __CUDACC__
-template TensorGPUf TensorGPUf::segment (const int begin, const int end) const;
-template TensorGPUd TensorGPUd::segment (const int begin, const int end) const;
-template TensorCPUf TensorCPUf::segment (const int begin, const int end) const;
-template TensorCPUd TensorCPUd::segment (const int begin, const int end) const;
+template TensorGPUf TensorGPUf::section (const int begin, const int end) const;
+template TensorGPUd TensorGPUd::section (const int begin, const int end) const;
+template TensorCPUf TensorCPUf::section (const int begin, const int end) const;
+template TensorCPUd TensorCPUd::section (const int begin, const int end) const;
 #endif
 
 template <typename XPU, typename DT>
-const Tensor<XPU, DT>& Tensor<XPU, DT>::operator= (const Tensor<XPU, DT> &t)
-{ shape = t.shape;
-  dptr  = t.dptr;
-  did_  = t.did_;
-  cherry = false;
+Tensor<XPU, DT>& Tensor<XPU, DT>::operator= (const Tensor<XPU, DT> &t)
+{ if (&t != this)
+  { shape = t.shape;
+    dptr  = t.dptr;
+    did_  = t.did_;
+    cherry = false;
+  }
   return *this;
 }
 #ifndef __CUDACC__
-template const TensorGPUf& TensorGPUf::operator= (const TensorGPUf &t);
-template const TensorGPUd& TensorGPUd::operator= (const TensorGPUd &t);
-template const TensorCPUf& TensorCPUf::operator= (const TensorCPUf &t);
-template const TensorCPUd& TensorCPUd::operator= (const TensorCPUd &t);
+template TensorGPUf& TensorGPUf::operator= (const TensorGPUf &t);
+template TensorGPUd& TensorGPUd::operator= (const TensorGPUd &t);
+template TensorCPUf& TensorCPUf::operator= (const TensorCPUf &t);
+template TensorCPUd& TensorCPUd::operator= (const TensorCPUd &t);
 #endif
 
 
@@ -309,6 +311,7 @@ template void TensorGPUd::copy (const TensorCPUd &in);
 template void TensorCPUf::copy (const TensorCPUf &in);
 template void TensorCPUd::copy (const TensorCPUd &in);
 #endif
+
 
 
 #endif
