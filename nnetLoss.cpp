@@ -27,12 +27,18 @@ XPU_KERNEL(SigmoidForward) (
 LAYER_FORWARD (LayerLoss)
 { const int N = dst_.size();
   float  sasum = 0;
+  src_.blas_asum (sasum);
+  if (sasum >= 1e10 || isnan (sasum))
+    LOG (FATAL) << "\tXPU  " << did_ << "\tsasum is too large";
+  if (sasum <= 1e-7)
+    LOG (FATAL) << "\tXPU  " << did_ << "\tsasum is too small";
   switch (pl_.loss)
   { case ENTROPY:  // p(c|x)
 #ifdef __CUDACC__
-      cuda_check (cudnnSoftmaxForward (CUDNN_HANDLE, CUDNN_SOFTMAX_ACCURATE, CUDNN_SOFTMAX_MODE_INSTANCE,
+      cuda_check (cudnnSoftmaxForward (CUDNN_HANDLE, CUDNN_SOFTMAX_LOG, CUDNN_SOFTMAX_MODE_INSTANCE,
         &alpha, srcDesc_, src_.dptr,
        	&beta,  dstDesc_, src_.dptr));
+      src_.blas_vexp (src_);
 #else
       for (int i = 0; i < src_.nums(); ++i)
         src_[i].softmax ();
@@ -48,11 +54,6 @@ LAYER_FORWARD (LayerLoss)
     default:
       LOG (FATAL) << "not implemented loss method";
   }
-  src_.blas_asum (sasum);
-  if (isnan (sasum))
-    LOG (FATAL) << "\tXPU  " << did_ << "\tsasum is\tnan";
-  if (fabs (sasum) < 1e-8)
-    LOG (FATAL) << "\tXPU  " << did_ << "\tsasum is\t0";
 }
 
 LAYER_BACKPROP (LayerLoss)
@@ -72,10 +73,10 @@ LAYER_BACKPROP (LayerLoss)
   }
   src_.blas_scal (1.f/nums_);
   src_.blas_asum (gasum);
-  if (isnan (gasum))
-    LOG (FATAL) << "\tXPU  " << did_ << "\tgasum is\tnan";
-  if (fabs (gasum) < 1e-8)
-    LOG (FATAL) << "\tXPU  " << did_ << "\tgasum is\t0";
+  if (gasum >= 1e10 || isnan (gasum))
+    LOG (FATAL) << "\tXPU  " << did_ << "\tgasum is too large";
+  if (gasum <= 1e-7)
+    LOG (FATAL) << "\tXPU  " << did_ << "\tgasum is too small";
 }
 
 LAYER_INIT (LayerLoss)
