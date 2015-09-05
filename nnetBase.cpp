@@ -47,7 +47,7 @@ void ParaNNet::config (const libconfig::Config &cfg)
   max_round  = cfg.lookup ("model.max_round");
   now_round  = 0;
   
-  tFormat_	= TensorFormat (cfg);  tFormat_.numBatch /= num_device;
+  tFormat_	= TensorFormat (cfg);  // TODO
   dataTrain_	= ParaFileData (cfg, "traindata");
   dataPredt_	= ParaFileData (cfg,  "testdata");
   dataType	= dataTrain_.type;
@@ -67,8 +67,7 @@ void ParaNNet::config (const libconfig::Config &cfg)
   Setting
   &isLoad	= cfg.lookup ("model.isLoad"),
   &isFixed	= cfg.lookup ("model.isFixed"),
-  &sigma	= cfg.lookup ("model.sigma"),
-  &random	= cfg.lookup ("model.rand_t");
+  &sigma	= cfg.lookup ("model.sigma");
 
   float epsW	= cfg.lookup ("optim.epsW");
   float epsB	= cfg.lookup ("optim.epsB");
@@ -97,7 +96,6 @@ void ParaNNet::config (const libconfig::Config &cfg)
     { pl.isLoad	= isLoad[j];
       pl.isFixed= isFixed[j];
       pl.sigma	= sigma[j];
-      pl.random	= random[j];
       j++;
     }
 
