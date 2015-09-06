@@ -123,6 +123,18 @@ void NNetModel<XPU>::load_model (const int did)
 }
 template void NNetModel<GPU>::load_model (const int did);
 
+template <typename XPU>
+void NNetModel<XPU>::show_layer (const int did)
+{ cuda_set_device (did);
+  if (did == para_.min_device)
+  for (int i = 0; i < para_.num_layers; ++i)
+  { ParaLayer &pl = para_.paraLayer_[i];
+    if ((pl.type == kConvolution || pl.type == kPooling) && nodes_[did][pl.idxs].rows() >= nodes_[did][0].rows()/8)
+      nodes_[did][pl.idxs].show_image ();
+  }
+}
+template void NNetModel<GPU>::show_layer (const int did);
+
 
 
 template <typename XPU>
@@ -225,6 +237,7 @@ void NNetModel<XPU>::train_epoch (DataBuffer<float> &buffer, DataBatch<XPU, floa
         batch.rand (buffer);
       fprop (did, true);
       batch.send (buffer);
+//    show_layer (did);
       bprop (did);
 
       reduce_gmat (did);
