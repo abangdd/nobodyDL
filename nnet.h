@@ -29,7 +29,6 @@ public:
   int idxs, idxd;
   int ksize, pad, stride;
   int flts;
-  int random;
   int neuron;
   int pool;
   int loss;
@@ -253,6 +252,7 @@ public:
   void trval ();
   void save_model (const int did);
   void load_model (const int did);
+  void show_layer (const int did);
 private:
   void train_epoch (DataBuffer<float> &buffer, DataBatch<XPU, float> &batch, const int did);
   void  eval_epoch (DataBuffer<float> &buffer, DataBatch<XPU, float> &batch, const int did);
