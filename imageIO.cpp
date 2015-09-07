@@ -7,11 +7,12 @@
 #include "../include/tensor.h"
 
 template <>
-void TensorCPUf::show_image (const int numc)
+void TensorCPUf::show_image (int numc)
 { shape.print ();
   Mat dst;
   if (chls() != 3)
-  { int numy = round (sqrt (nums() * numc) * 3 / 4.);  numy = std::min (numy, nums());
+  { if (numc == 0)  numc = sqrt (chls());
+    int numy = round (sqrt (nums() * numc) * 3 / 4.);  numy = std::min (numy, nums());
     int numx = round (sqrt (nums() / numc) * 4 / 3.);  numx = std::max (numx, 1);
 
     const int numi = std::min (numy*numx, nums());
@@ -49,7 +50,7 @@ void TensorCPUf::show_image (const int numc)
 }
 
 template <>
-void TensorGPUf::show_image (const int numc)
+void TensorGPUf::show_image (int numc)
 { TensorCPUf im;  im.create (shape);
   im.copy (*this);
   im.show_image (numc);
@@ -60,21 +61,6 @@ void bgr_normalize (Mat &src)
   split (src, chlVtr);
   for (int i = 0; i < 3; i++)
     normalize (chlVtr[i], chlVtr[i], 0, 255, cv::NORM_MINMAX);
-  merge (chlVtr, src);
-}
-
-void bgr_jitter (Mat &src)
-{ vector<Mat> chlVtr;
-  split (src, chlVtr);
-  for (int i = 0; i < 3; ++i)
-  { double minVal = 0, maxVal = 0; 
-    minMaxLoc (chlVtr[i], &minVal, &maxVal, 0, 0);
-    double midVal = (maxVal + minVal) / 2;
-    double subVal = (maxVal - minVal) / 2;
-    minVal = cv::saturate_cast<uchar> (midVal - subVal * (rand() % 21 + 90) / 100);
-    maxVal = cv::saturate_cast<uchar> (midVal + subVal * (rand() % 21 + 90) / 100);
-    normalize (chlVtr[i], chlVtr[i], minVal, maxVal, cv::NORM_MINMAX);
-  }
   merge (chlVtr, src);
 }
 
@@ -149,8 +135,6 @@ void image_resize (const ParaImage &para, const string &fsrc, const string &fdst
   const int rows = isrc.rows, cols = isrc.cols;
   float minDim = std::min (para.rows, para.cols);
   float aRatio = (float)rows / cols;
-  //if (aRatio > 1.33f) aRatio = 1.33f;
-  //if (aRatio < 0.75f) aRatio = 0.75f;
   int adaRows = rows >= cols ? round (minDim * aRatio) : minDim;
   int adaCols = cols >= rows ? round (minDim / aRatio) : minDim;
   int interpolation = (rows < para.rows || cols < para.cols) ? CV_INTER_CUBIC : CV_INTER_AREA;
