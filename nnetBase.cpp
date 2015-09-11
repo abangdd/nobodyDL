@@ -7,12 +7,12 @@
 string ParaLayer::get_layer_type ()
 { std::stringstream sstr;
   switch (type)
-  { case kConvolution	: return "Convolution";
+  { case kConvolution	: sstr << secc;   return "Convolution\t" + sstr.str();
     case kDropout	: sstr << dbase;  return "Dropout\t\t" + sstr.str();
     case kFullConn	: return "FullConn";
     case kLoss		: return "Loss";
     case kNeuron	: return "Neuron";
-    case kPooling	: return "Pooling";
+    case kPooling	: sstr << ksize;  return "Pooling\t\t" + sstr.str();
     case kSoftmax	: return "Softmax";
     default		: LOG (FATAL) << "unknown layer type";
   }
@@ -59,6 +59,7 @@ void ParaNNet::config (const libconfig::Config &cfg)
   &pad		= cfg.lookup ("layer.pad"),
   &stride	= cfg.lookup ("layer.stride"),
   &flts		= cfg.lookup ("layer.flts"),
+  &secc		= cfg.lookup ("layer.secc"),
   &neuron	= cfg.lookup ("layer.neuron_t"),
   &pool		= cfg.lookup ("layer.pool_t"),
   &dropout	= cfg.lookup ("layer.dropout"),
@@ -86,6 +87,7 @@ void ParaNNet::config (const libconfig::Config &cfg)
     pl.pad	= pad[i];
     pl.stride	= stride[i];
     pl.flts	= flts[i];
+    pl.secc	= secc[i];
 
     pl.neuron	= neuron[i];
     pl.pool	= pool[i];
@@ -157,13 +159,17 @@ void ParaNNet::config (const libconfig::Config &cfg)
 
 #ifdef __CUDACC__
 template <>
-void TensorGPUf::setTensor4dDesc (cudnnTensorDescriptor_t &desc)
-{ cuda_check (cudnnSetTensor4dDescriptor (desc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, nums(), chls(), rows(), cols()));
+void TensorGPUf::setTensor4dDesc (cudnnTensorDescriptor_t &desc, const int secc)
+{ const int sw = 1;
+  const int sh = cols() * sw;
+  const int sc = rows() * sh;
+  const int sn = chls() * sc;
+  cuda_check (cudnnSetTensor4dDescriptorEx (desc, CUDNN_DATA_FLOAT, nums(), chls()/secc, rows(), cols(), sn, sc, sh, sw));
 }
 
 template <>
-void TensorGPUf::setFilter4dDesc (cudnnFilterDescriptor_t &desc)
-{ cuda_check (cudnnSetFilter4dDescriptor (desc, CUDNN_DATA_FLOAT, nums(), chls(), rows(), cols()));
+void TensorGPUf::setFilter4dDesc (cudnnFilterDescriptor_t &desc, const int secc)
+{ cuda_check (cudnnSetFilter4dDescriptor   (desc, CUDNN_DATA_FLOAT, nums()/secc, chls(), rows(), cols()));
 }
 #endif
 
