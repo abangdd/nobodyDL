@@ -105,7 +105,7 @@ public:
 public:
   void save (const string file);
   void load (const string file, const int did);
-  void show_image (const int numc = 3);
+  void show_image (int numc = 0);
   void read_image_data (const TensorFormat &tf, const string &file, const int idx, const Tensor<XPU, DT> &mean);
   void read_image_label (const MetaImage &dimg, const string &file, const int idx);
   void read_image (const TensorFormat &tf, const vector<string> &imgList);
@@ -168,8 +168,8 @@ public:
   cudaStream_t   get_copy_stream () const { return dnnctx[did_]->stream_;  }
   cudaStream_t   get_calc_stream () const { return dnnctx[did_]->stream_;  }
   cublasHandle_t get_blas_handle () const { return dnnctx[did_]->cublas_;  }
-  void setTensor4dDesc (cudnnTensorDescriptor_t &desc);
-  void setFilter4dDesc (cudnnFilterDescriptor_t &desc);
+  void setTensor4dDesc (cudnnTensorDescriptor_t &desc, const int secc = 1);
+  void setFilter4dDesc (cudnnFilterDescriptor_t &desc, const int secc = 1);
 public:
   Shape shape;
   DT *dptr;
