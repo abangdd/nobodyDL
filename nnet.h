@@ -28,7 +28,7 @@ public:
   int type;
   int idxs, idxd;
   int ksize, pad, stride;
-  int flts;
+  int flts, secc;
   int neuron;
   int pool;
   int loss;
@@ -98,9 +98,10 @@ public:
 
 #define MODEL_MEMBER \
   Tensor<XPU, float> drep_,  nrep_; \
+  Tensor<XPU, float>mwmat_, nwmat_; \
   Tensor<XPU, float> wmat_, gwmat_; \
   Tensor<XPU, float> bias_, gbias_; \
-  int chls_, flts_; \
+  int chls_, flts_, secc_; \
   int dims_, nums_
 
 template <typename XPU>
@@ -115,7 +116,6 @@ public:
   MODEL_MEMBER;
 private:
   Tensor<XPU, float> tcol_;
-  Tensor<XPU, float> mwmat_, nwmat_;
   cudnnTensorDescriptor_t srcDesc_, dstDesc_;
   cudnnTensorDescriptor_t biasDesc_;
   cudnnFilterDescriptor_t wmatDesc_;
@@ -136,8 +136,6 @@ public:
 protected:
   LAYER_MEMBER;
   MODEL_MEMBER;
-private:
-  Tensor<XPU, float> mwmat_, nwmat_;
 };
 
 template <typename XPU>
