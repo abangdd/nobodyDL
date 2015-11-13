@@ -5,15 +5,14 @@
 
 	Here are some prons of this model:
 	a littel bit higher accuracy than other pre-trained imagenet-1k models relesaed by popular deep learning tools such as Caffe, mxnet
-	model structure as simple as VGGNet, which makes it easier to be used in object detection and semantic segmentation algrithims than BN-Inception
+	model structure as simple as VGGNet, which makes it easier to be used in object detection and semantic segmentation algorithms than BN-Inception
 	inference speed as fast as BN-Inception, about 4 times faster than VGGNet 16, so it can accelerate most VGGNet based systems from quasi-realtime to realtime
 	moderate model size, about 50M binary storage
 	memory saving, I can use mini-batch size 128 on GTX980Ti, up to 256 should smart memory allocator added
 	
 	and also some cons:
-	no distributed learning, unless I found it useful for CNN architectures
-	no DAG support, which means only simple CNN structures like VGGNet can be configured
-	no andvanced network layers are provided, such as BN, SPP, PReLU, LReLU, etc
+	no distributed learning, because I have no idea about distributed algorithms now
+	no andvanced network layers, which means only very simple CNN structures like VGGNet can be configured
 	no training from scratch codes are provided, I am sorry for that
 	
 	and some explanations:
