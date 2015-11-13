@@ -13,6 +13,7 @@
 	and also some cons:
 	no DAG support, which means only simple CNN structures like VGGNet can be configured
 	the training from scratch codes are not provided, so the result is not reproducible in 60 epochs
+	only suitable for those having deep learning experiences and DIY capabilities
 	
 	and some explanations:
 	it's unfair to compare deep learning tools when using different models, so I restrict myslef to use moderate GPU resources, moderate model size, well-known layers, etc
