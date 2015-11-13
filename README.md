@@ -12,6 +12,7 @@
 	
 	and also some cons:
 	no DAG support, which means only simple CNN structures like VGGNet can be configured
+	only well-known layers are provided, they are convolution, dropout, fullconnect, ReLU, max-pooling and avg-pooling
 	the training from scratch codes are not provided, so the result is not reproducible in 60 epochs
 	only suitable for those having deep learning experiences and DIY capabilities
 	
