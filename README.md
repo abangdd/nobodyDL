@@ -11,6 +11,7 @@
 	memory saving, I can use mini-batch size 128 on GTX980Ti, up to 256 should smart memory allocator added
 	
 	and also some cons:
+	no distributed learning, unless I found it useful for CNN architectures
 	no DAG support, which means only simple CNN structures like VGGNet can be configured, in my opinion, whenever a basic network performance is enhanced by training algrithims, so will be complex ones
 	only well-known layers are provided, they are convolution, dropout, fullconnect, ReLU, max-pooling and avg-pooling
 	the training from scratch codes are not provided, so the result is not reproducible in 60 epochs
