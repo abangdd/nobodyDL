@@ -12,13 +12,13 @@
 	
 	and also some cons:
 	no distributed learning, unless I found it useful for CNN architectures
-	no DAG support, which means only simple CNN structures like VGGNet can be configured, in my opinion, whenever a basic network performance is enhanced by training algrithims, so will be complex ones
-	only well-known layers are provided, they are convolution, dropout, fullconnect, ReLU, max-pooling and avg-pooling
-	the training from scratch codes are not provided, so the result is not reproducible in 60 epochs
-	I do not use other machine learning tools, you may need to convert the model files to according formats before using them in other tools
+	no DAG support, which means only simple CNN structures like VGGNet can be configured
+	no andvanced network layers are provided, such as BN, SPP, PReLU, LReLU, etc
+	no training from scratch codes are provided, so the result is not reproducible in 60 epochs
 	
 	and some explanations:
 	it's unfair to compare deep learning tools when using different models, so I restrict myslef to use moderate GPU resources, moderate model size, well-known layers, etc
+	I have no experiences in using other machine learning tools, so you may need to convert the model files to according formats before using them in other tools
 	
 	and some TODOs:
 	I found 2 dead filters (all zero) in the first layer, is that commom in other DL tools? If so, the accuracy can be further improved without more epochs
