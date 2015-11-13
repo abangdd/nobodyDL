@@ -4,7 +4,7 @@
 	After training for 60 epochs, I got a 71.4% top 1 accuracy in the imagenet-1k classification task (validation data, 224*224 central crop), and I'am preparing on releasing this model.
 
 	Here are some prons of this model:
-	*a littel bit higher accuracy than other pre-trained imagenet-1k models relesaed by popular deep learning tools such as Caffe, mxnet
+	*[a littel bit higher accuracy than other pre-trained imagenet-1k models relesaed by popular deep learning tools such as Caffe, mxnet]
 	model structure as simple as VGGNet, so it is easier to use in object detection and semantic segmentation algrithims than BN-Inception
 	inference speed as fast as BN-Inception, about 4 times faster than VGGNet 16, so it can accelerate most VGGNet based systems from quasi-realtime to realtime
 	moderate model size, about 50M binary storage
