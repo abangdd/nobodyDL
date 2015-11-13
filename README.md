@@ -12,7 +12,7 @@
 	
 	and also some cons:
 	no DAG support, which means only very simple CNN structures can be configured
-	no training from scratch code provided, which means the result is not reproducible in 60 epochs
+	the training from scratch codes are not provided, so the result is not reproducible in 60 epochs
 	
 	and some explanations:
 	it's unfair to compare deep learning tools when using different models, so I restrict myslef to use moderate GPU resources, moderate model size, well-known layers, etc
