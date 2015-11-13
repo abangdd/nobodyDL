@@ -22,6 +22,6 @@
 	I have no experiences in using other machine learning tools, so you may need to convert the model files to according formats before using them in other tools
 	
 	and some TODOs:
-	I found 2 dead filters (all zero) in the first layer, is that commom in other DL tools? If so, the accuracy can be further improved without training more epochs
+	I found 2 dead filters (all zero) in the first layer, is that commom in other DL tools? If so, the accuracy can be enhanced without training more epochs
 	the parameter sync implementation should be improved before I finished building a 4 GPU system
 	learning Markdown syntax
