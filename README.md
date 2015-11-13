@@ -14,7 +14,7 @@
 	no distributed learning, unless I found it useful for CNN architectures
 	no DAG support, which means only simple CNN structures like VGGNet can be configured
 	no andvanced network layers are provided, such as BN, SPP, PReLU, LReLU, etc
-	no training from scratch codes are provided, so the result is not reproducible in 60 epochs
+	no training from scratch codes are provided, I am sorry for that
 	
 	and some explanations:
 	it's unfair to compare deep learning tools when using different models, so I restrict myslef to use moderate GPU resources, moderate model size, well-known layers, etc
