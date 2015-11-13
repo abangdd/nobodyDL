@@ -16,3 +16,6 @@
 	
 	and some explanations:
 	it's unfair to compare deep learning tools when using different models, so I restrict myslef to use moderate GPU resources, moderate model size, well-known layers, etc
+	
+	and some TODOs
+	I found 2 dead filters (all zero) in the first layer, is that commom in other DL tools? If so, the accuracy can be further improved without more epochs
