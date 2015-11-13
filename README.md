@@ -17,10 +17,9 @@
 	
 	and some explanations:
 	it's unfair to compare deep learning tools when using different models, so I restrict myslef to use moderate GPU resources, moderate model size, well-known layers, etc
-	the parameter sync implementation needs to be improved before I finished building a 4 GPU system
 	I have no experiences in using other machine learning tools, so you may need to convert the model files to according formats before using them in other tools
 	
 	and some TODOs:
 	I found 2 dead filters (all zero) in the first layer, is that commom in other DL tools? If so, the accuracy can be enhanced without training more epochs
-	the parameter sync implementation should be improved before I finished building a 4 GPU system
+	the parameter sync implementation needs to be improved before I finished building a 4 GPU system
 	learning Markdown syntax
