@@ -23,3 +23,6 @@
 	I found 2 dead filters (all zero) in the first layer, is that commom in other DL tools? If so, the accuracy can be enhanced without training more epochs
 	the parameter sync implementation needs to be improved before I finished building a 4 GPU system
 	learning Markdown syntax
+	
+	with some thoughts:
+	我直接写中文吧，有时候我们会看到某些经过设计的模型提升了一些准确率，我想这可能是因为这些模型的简化版还有提升的空间，在这种情况下，无论如何设计，准确率都会得到改进的。
