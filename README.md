@@ -11,8 +11,8 @@
 	memory saving, I can use mini-batch size 128 on GTX980Ti, up to 256 should smart memory allocator added
 	
 	and also some cons:
-	no distributed learning, because I have no idea about distributed algorithms now
-	no andvanced network layers, which means only very simple CNN structures like VGGNet can be configured
+	no distributed learning, because I have no idea about distributed algorithms for now
+	no andvanced network layers, nor complex network structures, because I believe the Chinese proverb "一力降十会"
 	no training from scratch codes are provided, I am sorry for that
 	
 	and some explanations:
