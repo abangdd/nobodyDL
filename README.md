@@ -8,7 +8,7 @@
 	network structure as simple as VGGNet, which makes it easier to be used in object detection and semantic segmentation tasks than BN-Inception, and easier to be migrated into other DL tools or platforms
 	inference speed about 4 times faster than VGGNet 16, so it can accelerate most VGGNet based systems from quasi-realtime to realtime
 	moderate model size, about 50M binary storage
-	memory saving, can hold mini-batch size 128 on GTX980Ti, up to 256 if smart memory allocators added
+	memory saving, can hold mini-batch size 128 on GTX980Ti, without using smart memory allocators
 	
 	and also some cons:
 	no training from scratch codes provided, I am sorry for that
