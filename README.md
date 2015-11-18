@@ -5,7 +5,7 @@
 
 	Here are some prons of this model:
 	a littel bit higher accuracy than other pre-trained imagenet-1k models relesaed by popular DL tools such as Caffe, mxnet
-	model structure as simple as VGGNet, which makes it easier to be used in object detection and semantic segmentation tasks than BN-Inception, and easier to be migrated into other DL tools or platforms
+	network structure as simple as VGGNet, which makes it easier to be used in object detection and semantic segmentation tasks than BN-Inception, and easier to be migrated into other DL tools or platforms
 	inference speed about 4 times faster than VGGNet 16, so it can accelerate most VGGNet based systems from quasi-realtime to realtime
 	moderate model size, about 50M binary storage
 	memory saving, can hold mini-batch size 128 on GTX980Ti, up to 256 if smart memory allocators added
