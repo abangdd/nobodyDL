@@ -12,15 +12,16 @@
 	
 	and also some cons:
 	no training from scratch codes provided, I am sorry for that
+	I have no experiences in using other machine learning tools, so you may need to convert these model files to according formats of other tools
 	
 	and some explanations:
 	it's unfair to compare deep learning tools while using different models, so I restrict myslef to use moderate GPU resources, moderate model size, most well-known network layers, etc
-	I have no experiences in using other machine learning tools, so you may need to convert these model files to according formats before using them in other tools
 	
 	and some TODOs:
 	I found 2 dead filters (all zero) in the first layer, is that commom in other DL tools? If so, the accuracy can be enhanced without training more epochs
 	the parameter sync implementation needs to be improved before I finished building a 4 GPU system
 	multi-scale training and inference
+	providing some tools to migrate models into mobile DL frameworks automatically
 	learning Markdown syntax
 	
 	with some thoughts:
