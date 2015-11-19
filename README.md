@@ -22,7 +22,5 @@
 	the parameter sync implementation needs to be improved before I finished building a 4 GPU system
 	multi-scale training and inference
 	providing some tools to migrate models into mobile DL frameworks automatically
-	learning Markdown syntax
-	
-	with some thoughts:
 	分布式训练对于千万级别的图片任务是有用的，不过目前我对分布式算法还没什么认识
+	learning Markdown syntax
