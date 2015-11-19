@@ -20,6 +20,7 @@
 	and some TODOs:
 	I found 2 dead filters (all zero) in the first layer, is that commom in other DL tools? If so, the accuracy can be enhanced without training more epochs
 	the parameter sync implementation needs to be improved before I finished building a 4 GPU system
+	multi-scale training and inference
 	learning Markdown syntax
 	
 	with some thoughts:
