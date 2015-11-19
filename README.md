@@ -18,9 +18,8 @@
 	it's unfair to compare deep learning tools while using different models, so I restrict myslef to use moderate GPU resources, moderate model size, most well-known network layers, etc
 	
 	and some TODOs:
-	I found 2 dead filters (all zero) in the first layer, is that commom in other DL tools? If so, the accuracy can be enhanced without training more epochs
 	the parameter sync implementation needs to be improved before I finished building a 4 GPU system
 	multi-scale training and inference
 	providing some tools to migrate models into mobile DL frameworks automatically
-	分布式训练对于千万级别的图片任务是有用的，不过目前我对分布式算法还没什么认识
+	分布式算法
 	learning Markdown syntax
