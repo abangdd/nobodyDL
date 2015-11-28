@@ -13,20 +13,12 @@
 	很少的资源占用，在准确率超过70%的模型中，目前是最快的，也是显存占用最少的
 	较少的模型参数，大约50兆二进制存储空间
 
-	and also some cons:
-	no training from scratch codes provided, I am sorry for that
-	I have no experiences in using other machine learning tools, so you may need to convert these model files to according formats of other tools
-	
-	and some explanations:
-	it's unfair to compare deep learning tools while using different models, so I restrict myslef to use moderate GPU resources, moderate model size, most well-known network layers, etc
-	
-	and some TODOs:
-	the parameter sync implementation needs to be improved before I finished building a 4 GPU system
-	multi-scale training and inference
-	providing some tools to migrate models into mobile DL frameworks automatically
-<<<<<<< HEAD
-	?ֲ?ʽ?㷨
-=======
+	同时他也有一些缺点：
+	并没有提供加速训练的代码
+	并没有提供把模型文件转换为Caffe格式的工具
+	并没有提供4卡并行的实现，目前我还没有相应的硬件
+
+	剩下还有一些我没有想明白的问题:
+	多尺度的训练和预测
 	分布式算法
->>>>>>> nobodyDL/master
-	learning Markdown syntax
+	Markdown语法
