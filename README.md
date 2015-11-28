@@ -1,6 +1,8 @@
 # nobodyDL——小人物深度学习
->>>>>>> nobodyDL/master
-	sorry it's incomplete, not ready now
+	nobodyDL的理念是简单、快速、有效
+	简单——nobodyDL目前只有convolution、ReLU、max/avg pooling、dropout、loss这6种网络结构
+	快速——nobodyDL不希望通过牺牲速度来提高精度
+	有效——nobodyDL不希望通过牺牲精度来提高速度
 
 	After training for 60 epochs, I got a 71.4% top 1 accuracy in the imagenet-1k classification task (validation data, 224*224 central crop), and I'am preparing on releasing this model.
 
