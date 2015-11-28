@@ -1,6 +1,3 @@
-<<<<<<< HEAD
-# nobodyDL¡ª¡ªÐ¡ÈËÎïÉî¶ÈÑ§Ï°
-=======
 # nobodyDLâ€”â€”å°äººç‰©æ·±åº¦å­¦ä¹ 
 >>>>>>> nobodyDL/master
 	sorry it's incomplete, not ready now
@@ -26,7 +23,7 @@
 	multi-scale training and inference
 	providing some tools to migrate models into mobile DL frameworks automatically
 <<<<<<< HEAD
-	·Ö²¼Ê½Ëã·¨
+	?Ö²?Ê½?ã·¨
 =======
 	åˆ†å¸ƒå¼ç®—æ³•
 >>>>>>> nobodyDL/master
