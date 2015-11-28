@@ -1,0 +1,46 @@
+硬件和系统
+只支持linux系统和cuda
+确认用的显卡至少是gtx780或者gtx970
+
+安装
+确认已安装c++11
+确认已成功安装过caffe（不是必须但最好有这样的经验）
+确认已安装cuda、cudnn、mkl、opencv、glog、gflags
+安装libconfig（额外的应该只有这一个）
+
+修改
+在Makefile里修改lib的路径，比如我把mkl安装到了/opt/intel/mkl/，就要做对应的修改
+nnetMain.cpp，第13行，修改为你自己的写日志路径
+
+config/imagenet224_conv_16.cfg，把/mnt/sdb/imagenet/这样的路径修改为你自己的图片路径
+config/imagenet224_conv_16.cfg，/mnt/sdb/imagenet/train256/，这里放imagenet训练数据
+config/imagenet224_conv_16.cfg，/mnt/sdb/imagenet/val256/，这里放imagenet验证数据
+config/imagenet224_conv_16.cfg，/mnt/sdb/imagenet/label/train.txt，这里是imagenet训练数据的列表，在label.zip里有
+config/imagenet224_conv_16.cfg，/mnt/sdb/imagenet/label/val.txt，这里放imagenet验证数据的列表，在label.zip里有
+
+config/imagenet224_conv_16.cfg，第5行，表示mini-batch的数量，如果显存不够，就往小了调
+config/imagenet224_conv_16.cfg，第7行，表示一次预取多少个mini-batch
+config/imagenet224_conv_16.cfg，第12行，表示平均文件的路径，我提供了
+
+config/imagenet224_conv_16.cfg，第41行，表示这一层的参数是否要固定，我这里一共选了前5层固定
+config/imagenet224_conv_16.cfg，第46、47行，表示用几块GPU，目前我只支持2块（因为只有两块），如果有一块那就都填0
+config/imagenet224_conv_16.cfg，第48行，num_evals  = 4，表示每个epoch做4次验证集的错误测试，用双卡会自动减少为2次
+config/imagenet224_conv_16.cfg，第49、50、51行，表示起始epoch、中止epoch、结束epoch
+config/imagenet224_conv_16.cfg，第52行，表示模型文件路径，要修改为你自己的，模型文件在imagenet224_conv_16_288.zip里有
+
+config/imagenet224_conv_16.cfg，第56行，表示卷积层起始步长
+config/imagenet224_conv_16.cfg，第57行，表示偏置层起始步长
+config/imagenet224_conv_16.cfg，第58行，表示结束步长
+config/imagenet224_conv_16.cfg，第59行，表示weight decay
+
+准备数据
+把图像统一整理成256*N大小，放到config/imagenet224_conv_16.cfg里指定的路径下面
+我写了一个df_image.cpp，可以做这件事，第9、10行，在里面设定源路径和目标路径
+
+训练
+GLOG_logtostderr=1 ./nnetMain --config config/imagenet224_conv_16.cfg
+用上面这条命令，过大约45分钟就能看到在验证集上的错误率度，大概是0.288，取的是正中间224*224的crop
+如果嫌慢可以调整num_evals  = 16;
+
+有问题联系我，我再来改这个文档
+
