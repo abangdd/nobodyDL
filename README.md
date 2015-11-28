@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 # nobodyDL¡ª¡ªÐ¡ÈËÎïÉî¶ÈÑ§Ï°
+=======
+# nobodyDLâ€”â€”å°äººç‰©æ·±åº¦å­¦ä¹ 
+>>>>>>> nobodyDL/master
 	sorry it's incomplete, not ready now
 
 	After training for 60 epochs, I got a 71.4% top 1 accuracy in the imagenet-1k classification task (validation data, 224*224 central crop), and I'am preparing on releasing this model.
@@ -21,5 +25,9 @@
 	the parameter sync implementation needs to be improved before I finished building a 4 GPU system
 	multi-scale training and inference
 	providing some tools to migrate models into mobile DL frameworks automatically
+<<<<<<< HEAD
 	·Ö²¼Ê½Ëã·¨
+=======
+	åˆ†å¸ƒå¼ç®—æ³•
+>>>>>>> nobodyDL/master
 	learning Markdown syntax
