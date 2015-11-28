@@ -9,14 +9,10 @@
 
 	这个模型有很多优点，我认为按重要程度排序分别是：
 	简单的网络结构，这使他能够无缝的代替VGGNet使用到目标检测和图像分割任务中，或者方便的移植进异构平台
+	很高的分类精度，在开源软件中，目前是最高的
+	很少的资源占用，在准确率超过70%的模型中，目前是最快的，也是显存占用最少的
+	较少的模型参数，大约50兆二进制存储空间
 
-	Here are some prons of this model:
-	a littel bit higher accuracy than other pre-trained imagenet-1k models relesaed by popular DL tools such as Caffe, mxnet
-	network structure as simple as VGGNet, which makes it easier to be used in object detection and semantic segmentation tasks than BN-Inception, and easier to be migrated into other DL tools or platforms
-	inference speed about 4 times faster than VGGNet 16, so it can accelerate most VGGNet based systems from quasi-realtime to realtime
-	moderate model size, about 50M binary storage
-	memory saving, can hold mini-batch size 128 on GTX980Ti, without using smart memory allocators
-	
 	and also some cons:
 	no training from scratch codes provided, I am sorry for that
 	I have no experiences in using other machine learning tools, so you may need to convert these model files to according formats of other tools
