@@ -145,41 +145,38 @@ template <typename XPU>
 void NNetModel<XPU>::reduce_gmat (const int did)
 { cuda_set_device (did);
   for (int i = optims_[did].size()-1; i >= 0; --i)
-    if (!optims_[did][i]->po_.isFixed)
-    { for (int r = para_.num_device / 2; r > 0; r /= 2)
-      { const int k1  = para_.num_device / r;
-        const int pid = did + k1 / 2;
-        if (did % k1 != para_.min_device)
-        { optims_[did][i]->reduce_notify ();
-        } else
-        { optims_[did][i]->reduce_wait (*optims_[pid][i]);
-          optims_[did][i]->reduce_gmat (*optims_[pid][i]);
-        }
+  if (!optims_[did][i]->po_.isFixed)
+  { for (int r = para_.num_device / 2; r > 0; r /= 2)
+    { const int pid = did + r;
+      if (did >= r && did < r * 2)
+        optims_[did][i]->reduce_notify ();
+      else if (did < r)
+      { optims_[did][i]->reduce_wait (*optims_[pid][i]);
+        optims_[did][i]->reduce_gmat (*optims_[pid][i]);
       }
-      if (did == para_.min_device)
-        optims_[did][i]->reduce_scal (1.f/para_.num_device);
     }
+    if (did == para_.min_device)
+      optims_[did][i]->reduce_scal (1.f/para_.num_device);
+  }
 }
 
 template <typename XPU>
 void NNetModel<XPU>::update_wmat (const int did)
 { cuda_set_device (did);
   for (int i = optims_[did].size()-1; i >= 0; --i)
-    if (!optims_[did][i]->po_.isFixed)
-    { if (did == para_.min_device)
-      { optims_[did][i]->update ();
+  if (!optims_[did][i]->po_.isFixed)
+  { if (did == para_.min_device)
+      optims_[did][i]->update ();
+    for (int r = 1; r < para_.num_device; r *= 2)
+    { const int pid = did - r;
+      if (did < r)
         optims_[did][i]->accept_notify ();
-      } else
-      for (int r = 1; r < para_.num_device; r *= 2)
-      { const int k1  = para_.num_device / r;
-        const int pid = did - k1 / 2;
-        if (did % k1 == k1/2)
-        { optims_[did][i]->accept_wait (*optims_[pid][i]);
-          optims_[did][i]->accept_wmat (*optims_[pid][i]);
-          optims_[did][i]->accept_notify ();
-        }
+      else if (did >= r && did < r * 2)
+      { optims_[did][i]->accept_wait (*optims_[pid][i]);
+        optims_[did][i]->accept_wmat (*optims_[pid][i]);
       }
     }
+  }
 }
 
 

@@ -9,6 +9,8 @@
 
 void SyncCV::notify ()
 { std::unique_lock <std::mutex> lck (mtx_);
+  while ( bval_)
+    cv_.wait (lck);
   bval_ = true;
   cv_.notify_all ();
 }
@@ -18,6 +20,7 @@ void SyncCV::wait ()
   while (!bval_)
     cv_.wait (lck);
   bval_ = false;
+  cv_.notify_all ();
 }
 
 
