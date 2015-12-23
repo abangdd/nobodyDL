@@ -89,9 +89,9 @@ void LayerConvolution<XPU>::init_model ()
   cuda_check (cudnnSetConvolution2dDescriptor  ( convDesc_, pl_.pad, pl_.pad, pl_.stride, pl_.stride, 1, 1,
     CUDNN_CROSS_CORRELATION));
 
-  fwdDataAlgo = cudnnConvolutionFwdAlgo_t      (pl_.ksize == 1 ? 2 : 1);
-  bwdDataAlgo = cudnnConvolutionBwdDataAlgo_t  (0);
-  bwdFltrAlgo = cudnnConvolutionBwdFilterAlgo_t(0);
+  fwdDataAlgo = cudnnConvolutionFwdAlgo_t      (1);
+  bwdDataAlgo = cudnnConvolutionBwdDataAlgo_t  (1);
+  bwdFltrAlgo = cudnnConvolutionBwdFilterAlgo_t(1);
   cuda_check (cudnnGetConvolutionForwardWorkspaceSize        (CUDNN_HANDLE, srcDesc_, wmatDesc_, convDesc_, dstDesc_,
     fwdDataAlgo, &fwdDataSize));
   cuda_check (cudnnGetConvolutionBackwardDataWorkspaceSize   (CUDNN_HANDLE, wmatDesc_, dstDesc_, convDesc_, srcDesc_,
