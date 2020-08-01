@@ -30,22 +30,22 @@ struct opdiv {
 };
 
 template <typename DT>
-struct opmaximum {
+struct opmax {
   XPU_INLINE DT operator() (const DT a, const DT b) const { return max (a, b); }
   XPU_INLINE DT identity() const;
   XPU_INLINE DT pooling (const DT a, const size_t region) const { return a; }
 };
 
 template <typename DT>
-struct opminimum {
+struct opmin {
   XPU_INLINE DT operator() (const DT a, const DT b) const { return min (a, b); }
   XPU_INLINE DT identity() const;
 };
 
-template <> XPU_INLINE float  opmaximum<float >::identity() const { return -FLT_MAX; }
-template <> XPU_INLINE float  opminimum<float >::identity() const { return  FLT_MAX; }
-template <> XPU_INLINE double opmaximum<double>::identity() const { return -DBL_MAX; }
-template <> XPU_INLINE double opminimum<double>::identity() const { return  DBL_MAX; }
+template <> XPU_INLINE float  opmax<float >::identity() const { return -FLT_MAX; }
+template <> XPU_INLINE float  opmin<float >::identity() const { return  FLT_MAX; }
+template <> XPU_INLINE double opmax<double>::identity() const { return -DBL_MAX; }
+template <> XPU_INLINE double opmin<double>::identity() const { return  DBL_MAX; }
 
 
 
