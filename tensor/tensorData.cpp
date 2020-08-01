@@ -4,229 +4,297 @@
 #include "../include/tensor.h"
 
 #ifndef __CUDACC__
-static const int nthd = 4;  // TODO
-TensorFormat::TensorFormat (const libconfig::Config &cfg) : isTrain(true)
-{ rows	= cfg.lookup ("tformat.rows");
-  cols	= cfg.lookup ("tformat.cols");
-  chls	= cfg.lookup ("tformat.chls");
-  nums	= cfg.lookup ("tformat.nums");
-  numBatch = cfg.lookup ("tformat.numBatch");
-  numClass = cfg.lookup ("tformat.numClass");
+BufferFormat::BufferFormat (const libconfig::Config& cfg) : isTrain(true) {
+    rows = cfg.lookup ("tformat.rows");
+    cols = cfg.lookup ("tformat.cols");
+    chls = cfg.lookup ("tformat.chls");
+    nums = cfg.lookup ("tformat.nums");
+    numBatch = cfg.lookup ("tformat.numBatch");
+    numClass = cfg.lookup ("tformat.numClass");
 };
-#endif
 
-
-
-template <typename XPU, typename DT>
-void Tensor<XPU, DT>::get_mean (Tensor<XPU, DT> &mean) const
-{ mean.mem_set (0);
-  for (int i = 0; i < nums(); ++i)
-    mean.blas_axpy ((*this)[i], 1.);
-  mean.blas_scal (1./nums());
-}
-#ifdef __CUDACC__
-template void TensorGPUf::get_mean (TensorGPUf &mean) const;
-template void TensorGPUd::get_mean (TensorGPUd &mean) const;
-#else
-template void TensorCPUf::get_mean (TensorCPUf &mean) const;
-template void TensorCPUd::get_mean (TensorCPUd &mean) const;
-#endif
-
-template <typename XPU, typename DT>
-void Tensor<XPU, DT>::sub_mean (const Tensor<XPU, DT> &mean)
-{ for (int i = 0; i < nums(); ++i)
-    (*this)[i].blas_axpy (mean, -1);
-}
-#ifdef __CUDACC__
-template void TensorGPUf::sub_mean (const TensorGPUf &mean);
-template void TensorGPUd::sub_mean (const TensorGPUd &mean);
-#else
-template void TensorCPUf::sub_mean (const TensorCPUf &mean);
-template void TensorCPUd::sub_mean (const TensorCPUd &mean);
-#endif
-
-
-
-#ifdef __CUDACC__
-template <typename DT>
-void DataBuffer<DT>::page_lock ()
-{ cuda_check (cudaHostRegister ( data_.dptr,  data_.size_d(), cudaHostRegisterPortable));
-  cuda_check (cudaHostRegister ( pred_.dptr,  pred_.size_d(), cudaHostRegisterPortable));
-  cuda_check (cudaHostRegister (label_.dptr, label_.size_d(), cudaHostRegisterPortable));
-}
-template void DataBuffer<float>::page_lock ();
-template <typename DT>
-void DataBuffer<DT>::page_unlk ()
-{ cuda_check (cudaHostUnregister ( data_.dptr));
-  cuda_check (cudaHostUnregister ( pred_.dptr));
-  cuda_check (cudaHostUnregister (label_.dptr));
-}
-template void DataBuffer<float>::page_unlk ();
-#else
-template <typename DT>
-void DataBuffer<DT>::reset_image_buf (bool is_train)
-{ if (image_.imgList.empty())
-    return;
-  tf_.isTrain = is_train;
-   data_.mem_set (0);
-   pred_.mem_set (0);
-  label_.mem_set (0);
-  inums_ = 0;
-}
-template void DataBuffer<float>::reset_image_buf (bool is_train);
-
-template <typename DT>
-void DataBuffer<DT>::create (const TensorFormat &tf, const int did)
-{ Shape dshape (tf.rows, tf.cols, tf.chls, tf.nums*tf.numBatch);
-  Shape lshape (      1, tf.numClass,   1, tf.nums*tf.numBatch);
-  did_ = did;
-   tf_ = tf;
-   data_.create (dshape, did_);
-   pred_.create (lshape, did_);
-  label_.create (lshape, did_);
-  dnums_ = data_.nums();  // TODO
-}
-template void DataBuffer<float>::create (const TensorFormat &tf, const int did);
-
-template <typename DT>
-void DataBuffer<DT>::read_tensor (const ParaFileData &pd)
-{  data_.load (pd. data, did_);
-  label_.load (pd.label, did_);
-   pred_.create (label_.shape, did_);
-  dnums_ = lnums_ = inums_ = data_.nums();  // TODO
-}
-template void DataBuffer<float>::read_tensor (const ParaFileData &pd);
-
-template <typename DT>
-void DataBuffer<DT>::read_stats  (const ParaFileData &pd)
-{  mean_.load (pd. mean, did_);
-}
-template void DataBuffer<float>::read_stats  (const ParaFileData &pd);
-
-template <>
-void DataBuffer<float>::read_image_thread ()
-{ if (image_.imgList.empty())
-    return;
-  if (curr_no_ + dnums_ > lnums_)
-    curr_no_ = 0;
-  for (inums_ = 0; inums_ < dnums_; inums_ += nthd)
-#pragma omp parallel for
-    for (int t = inums_; t < std::min (inums_+nthd, dnums_); ++t)
-    { const int idx = curr_no_ + t;
-      const string name = image_.image_path + image_.imgList[idx];
-       data_.read_image_data  (tf_, name, t, mean_);
-      label_.read_image_label (image_, name, t);
+BufferTrans::BufferTrans (const BufferFormat& bfFormat) {
+    if (bfFormat.isTrain) {
+        flip = rand() % 2;
+        jitter = (rand() % 3 + 4)/4.f;
+        offrow = (rand() % 10000)/10000.f;
+        offcol = (rand() % 10000)/10000.f;
     }
-  curr_no_ += dnums_;
+    if (bfFormat.isTrain && jitter > 1.5) {
+        padrow = jitter / 8;
+        padcol = jitter / 8;
+    }
 }
 
-template <>
-void DataBuffer<float>::read_image_openmp ()
-{ if (image_.imgList.empty())
-    return;
-  if (curr_no_ + dnums_ > lnums_)
-    curr_no_ = 0;
+
+
+void BatchScheduler::set_size (const int list_size, const int slot_size, const int mini_size) {
+    list_size_ = list_size;
+    slot_size_ = slot_size;
+    mini_size_ = mini_size;
+}
+
+void BatchScheduler::stop () {
+    std::lock_guard<std::mutex> taskLock (mtx_);
+    runnable_ = false;
+    cv_.notify_all();
+}
+
+void BatchScheduler::sync (const int task) {
+    std::lock_guard<std::mutex> taskLock (mtx_);
+    sync_pos_ = task;
+    cv_.notify_all();
+}
+
+void BatchScheduler::done_add (const int inc) {
+    std::lock_guard<std::mutex> taskLock (mtx_);
+    done_pos_ += inc;
+    cv_.notify_all();
+}
+
+bool BatchScheduler::task_add (const int inc) {
+    std::unique_lock<std::mutex> taskLock (mtx_);
+    while ((runnable_ && task_pos_ + inc >= list_size_ && sync_pos_ < task_pos_)
+        || (runnable_ && task_pos_ >= done_pos_ + parallel_ && inc == 1))  // inference concurrency
+        cv_.wait(taskLock);
+    if (!runnable_)  // quit
+        return false;
+    if (task_pos_ + inc >= list_size_)  // recycling when sync_pos_ == task_pos_
+        task_pos_ = proc_pos_ = done_pos_ = sync_pos_ = -1;
+    task_pos_ += inc;
+    cv_.notify_all();
+    return true;
+}
+
+bool BatchScheduler::proc_get (int& slot, int& task) {
+    std::unique_lock<std::mutex> taskLock (mtx_);
+    while (runnable_ && proc_pos_ >= task_pos_)
+        cv_.wait(taskLock);
+    if (!runnable_)  // quit
+        return false;
+    proc_pos_ += 1;
+    slot = proc_pos_ / slot_size_ * slot_size_;
+    task = proc_pos_;
+    cv_.notify_one();
+    return true;
+}
+
+bool BatchScheduler::sync_get (int& slot, int& task) {
+    std::unique_lock<std::mutex> taskLock (mtx_);
+    while (runnable_ && sync_pos_ >= done_pos_)
+        cv_.wait(taskLock);
+    if (!runnable_)  // quit
+        return false;
+    const int sync_done = std::min (done_pos_, sync_pos_ + mini_size_);
+    const int sync_ceil = sync_pos_ / slot_size_ * slot_size_ + slot_size_ - 1;  // cannot cross one slot
+    const int sync_task = sync_pos_ < sync_ceil && sync_done > sync_ceil ? sync_ceil : sync_done;
+    slot = sync_task / slot_size_ * slot_size_;
+    task = sync_task;
+    return true;
+}
+
+bool BatchScheduler::wait_done (const int task) {
+    std::unique_lock<std::mutex> taskLock (mtx_);
+    while (runnable_ && done_pos_ < task)
+        cv_.wait(taskLock);
+    if (!runnable_)  // quit
+        return false;
+    return true;
+}
+
+bool BatchScheduler::wait_sync (const int task) {
+    std::unique_lock<std::mutex> taskLock (mtx_);
+    while (runnable_ && sync_pos_ < task)
+        cv_.wait(taskLock);
+    if (!runnable_)  // quit
+        return false;
+    return true;
+}
+#endif
+
+
+
+#ifdef __CUDACC__
+template <typename DT>
+void TensorBuffer<DT>::page_lock () {
+    cuda_check (cudaHostRegister (data_.dptr, data_.size_d(), cudaHostRegisterPortable));
+    cuda_check (cudaHostRegister (pred_.dptr, pred_.size_d(), cudaHostRegisterPortable));
+    cuda_check (cudaHostRegister (anno_.dptr, anno_.size_d(), cudaHostRegisterPortable));
+    cuda_check (cudaHostRegister (eval_.dptr, eval_.size_d(), cudaHostRegisterPortable));
+}
+
+template <typename DT>
+void TensorBuffer<DT>::page_unlk () {
+    cuda_check (cudaHostUnregister (data_.dptr));
+    cuda_check (cudaHostUnregister (pred_.dptr));
+    cuda_check (cudaHostUnregister (anno_.dptr));
+    cuda_check (cudaHostUnregister (eval_.dptr));
+}
+template void TensorBuffer<float >::page_lock ();
+template void TensorBuffer<double>::page_lock ();
+template void TensorBuffer<float >::page_unlk ();
+template void TensorBuffer<double>::page_unlk ();
+#else
+template <typename DT>
+void TensorBuffer<DT>::create (const BufferFormat& bfFormat, const Shape& src, const Shape& dst, const Shape& val, const int did) {
+    bfFormat_ = bfFormat;
+    did_ = did;
+
+    list_size_ = fileData_.file_list.size();  // TODO
+    slot_size_ = bfFormat_.nums * bfFormat_.numBatch;
+    mini_size_ = bfFormat_.nums;
+
+    Shape src_shape (src.rows, src.cols, src.chls, slot_size_);
+    Shape dst_shape (dst.rows, dst.cols, dst.chls, slot_size_);
+    Shape val_shape (val.rows, val.cols, val.chls, slot_size_);
+    data_.create (src_shape, did_);
+    pred_.create (dst_shape, did_);
+    anno_.create (dst_shape, did_);
+    eval_.create (val_shape, did_);
+
+    scheduler_.set_size (list_size_, slot_size_, mini_size_);
+}
+
+template <typename DT>
+void TensorBuffer<DT>::read_tensor (const ParaFileData& pd) {
+    data_.load_bin (pd.data_path, did_);
+    anno_.load_bin (pd.anno_path, did_);
+    pred_.create (anno_.shape, did_);
+    eval_.create (anno_.shape, did_);
+    list_size_ = data_.nums();
+    slot_size_ = data_.nums();
+    mini_size_ = data_.nums();
+}
+template TensorBuffer<float >::~TensorBuffer();
+template TensorBuffer<double>::~TensorBuffer();
+template void TensorBuffer<float >::create (const BufferFormat& bfFormat, const Shape& src, const Shape& dst, const Shape& val, const int did);
+template void TensorBuffer<double>::create (const BufferFormat& bfFormat, const Shape& src, const Shape& dst, const Shape& val, const int did);
+template void TensorBuffer<float >::read_tensor (const ParaFileData& pd);
+template void TensorBuffer<double>::read_tensor (const ParaFileData& pd);
+
+
+
+template <typename DT>
+void TensorBuffer<DT>::proc_image_char (const vector<unsigned char>& bytes, int& slot, int& task) {
+    if (!scheduler_.proc_get (slot, task))
+        return;
+
+    BufferTrans bfTrans(bfFormat_);
+    read_image_char (bfTrans, bytes, task-slot);
+    scheduler_.done_add ();
+}
+
+template <typename DT>
+void TensorBuffer<DT>::proc_image_file () {
+    int slot, task;
+    if (!scheduler_.proc_get (slot, task))
+        return;
+
+    const auto& fname = fileData_.file_list.at(task);
+    name_[task-slot] = fname;
+
+    BufferTrans bfTrans(bfFormat_);
+    read_image_data (bfTrans, fileData_.data_path + fname, task-slot);
+    if (fileData_.anno_type == "file") {
+        const auto& fanno = fileData_.file_anno;
+        if (fanno.find(fname) != fanno.end())
+            read_image_anno (bfTrans, fanno.at(fname), task-slot);
+    }
+    else if (fileData_.anno_type == "coco_poly") {
+        const auto& fanno = fileData_.coco_poly;
+        if (fanno.find(fname) != fanno.end())
+            read_image_anno (bfTrans, fanno.at(fname), task-slot);
+    }
+    else if (fileData_.anno_type == "coco_mask") {
+        const auto& fanno = fileData_.coco_mask;
+        if (fanno.find(fname) != fanno.end())
+            read_image_anno (bfTrans, fanno.at(fname), task-slot);
+    }
+    scheduler_.done_add ();
+}
+
+template <typename DT>
+void TensorBuffer<DT>::proc_image_file_slot (const int read_size) {
+    const int proc_size = read_size > 0 ? read_size : slot_size_;
+    name_.resize (proc_size);
+    for (int i = 0; i < proc_size; i += mini_size_)
 #pragma omp parallel for
-  for (int i = 0; i < dnums_; ++i)
-  { const int idx = curr_no_ + i;
-    const string name = image_.image_path + image_.imgList[idx];
-     data_.read_image_data  (tf_, name, i, mean_);
-  }
-  curr_no_ += dnums_;
-  LOG (INFO) << "\timage read\tnumImages = " << dnums_;
+        for (int t = 0; t < std::min (mini_size_, proc_size-i); ++t)
+            proc_image_file ();
 }
+template void TensorBuffer<float >::proc_image_char (const vector<unsigned char>& bytes, int& slot, int& task);
+template void TensorBuffer<double>::proc_image_char (const vector<unsigned char>& bytes, int& slot, int& task);
+template void TensorBuffer<float >::proc_image_file ();
+template void TensorBuffer<double>::proc_image_file ();
+template void TensorBuffer<float >::proc_image_file_slot (const int read_size);
+template void TensorBuffer<double>::proc_image_file_slot (const int read_size);
+
+
 
 template <typename DT>
-void DataBuffer<DT>::read (const ParaFileData &pd)
-{ if (pd.type == "tensor")
-    read_tensor (pd);
+void TensorBuffer<DT>::evaluate (const int type, DT& error) {
+    DT top1 = 0;
+    const int chls = pred_.chls();
+    const int nums = pred_.nums();
+    if (type == 2) {  // segment
+        for (int i = 0; i < eval_.size(); ++i)
+            top1 += eval_.dptr[i];
+        error += top1/nums;
+    }
+    else {  // classification
+        for (int i = 0; i < nums; ++i) {
+            DT* pptr = pred_.dptr + i * chls;
+            DT* aptr = anno_.dptr + i * chls;
+            DT  maxv = 0;
+            int maxi = 0;
+            for (int j = 0; j < chls; ++j)
+                if (pptr[j] > maxv) {
+                    maxv = pptr[j];
+                    maxi = j;
+                }
+            top1 += aptr[maxi] != 1;
+        }
+        error += top1/nums;
+    }
 }
-template void DataBuffer<float>::read (const ParaFileData &pd);
-
-template <typename DT>
-void DataBuffer<DT>::get_mean (const ParaFileData &pd)
-{ Tensor<CPU, DT> mean_b;  mean_b.create (data_[0].shape);
-  Tensor<CPU, DT> mean_g;  mean_g.create (data_[0].shape);  mean_g.mem_set (0);
-
-  const int bufs = lnums_ / dnums_;
-  for (int b = 0; b < bufs; ++b)
-  { if (pd.type == "image")
-      read_image_openmp ();
-    data_. get_mean  (mean_b);
-    mean_g.blas_axpy (mean_b, 1.);
-  }
-
-  mean_g.blas_scal (1./bufs);
-  mean_g.save (pd.mean);
-//mean_g.print (112);
-}
-template void DataBuffer<float>::get_mean (const ParaFileData &pd);
-
-template <typename DT>
-void DataBuffer<DT>::evaluate (DT &err)
-{ int eval_idx;
-  DT  eval_val;
-
-  DT error = 0;
-  for (int i = 0; i < dnums_; ++i)
-  { pred_[i].blas_amax (eval_idx, eval_val);
-    if (label_[i].dptr[eval_idx] != 1)
-      error++;
-  }
-  err += error / dnums_;
-}
-template void DataBuffer<float>::evaluate (float &err);
+template void TensorBuffer<float >::evaluate (const int type, float& error);
+template void TensorBuffer<double>::evaluate (const int type, double& error);
 #endif
 
 
 
 template <typename XPU, typename DT>
-void DataBatch<XPU, DT>::reset ()
-{ curr_no_ = 0;
-   data_.mem_set (0);
-   pred_.mem_set (0);
-  label_.mem_set (0);
+void TensorBatch<XPU, DT>::send_pred (TensorBuffer<DT>& in, const int task) const {
+    const int end = task % in.slot_size_;  // TODO
+    const int beg = std::max (0, end + 1 - in.mini_size_);
+    in.pred_.section(beg, end).copy (pred_);
+    in.eval_.section(beg, end).copy (eval_);
+}
+
+template <typename XPU, typename DT>
+void TensorBatch<XPU, DT>::copy_data (const TensorBuffer<DT>& in, const int task) {
+    const int end = std::max (task % in.slot_size_, in.mini_size_ - 1);
+    const int beg = end + 1 - in.mini_size_;
+    data_.copy (in.data_.section(beg, end));
+    anno_.copy (in.anno_.section(beg, end));
+}
+
+template <typename XPU, typename DT>
+void TensorBatch<XPU, DT>::rand_data (const TensorBuffer<DT>& in) {
+    const int end = std::max (rand() % in.slot_size_, in.mini_size_ - 1);
+    const int beg = end + 1 - in.mini_size_;
+    data_.copy (in.data_.section(beg, end));
+    anno_.copy (in.anno_.section(beg, end));
 }
 #ifdef __CUDACC__
-template void DataBatch<GPU, float>::reset ();
+template void TensorBatch<GPU, float>::send_pred (TensorBuffer<float>& in, const int task) const;
+template void TensorBatch<GPU, float>::copy_data (const TensorBuffer<float>& in, const int task);
+template void TensorBatch<GPU, float>::rand_data (const TensorBuffer<float>& in);
 #else
-template void DataBatch<CPU, float>::reset ();
+template void TensorBatch<CPU, float>::send_pred (TensorBuffer<float>& in, const int task) const;
+template void TensorBatch<CPU, float>::copy_data (const TensorBuffer<float>& in, const int task);
+template void TensorBatch<CPU, float>::rand_data (const TensorBuffer<float>& in);
 #endif
 
-template <typename XPU, typename DT>
-void DataBatch<XPU, DT>::send (DataBuffer<DT> &in) const
-{ in. pred_.section (curr_no_, curr_no_+dnums_).copy ( pred_);
-}
-
-template <typename XPU, typename DT>
-void DataBatch<XPU, DT>::copy (const DataBuffer<DT> &in)
-{  data_.copy (in. data_.section (curr_no_, curr_no_+dnums_));
-  label_.copy (in.label_.section (curr_no_, curr_no_+dnums_));
-}
-
-template <typename XPU, typename DT>
-void DataBatch<XPU, DT>::next (const DataBuffer<DT> &in)
-{ curr_no_ += dnums_;
-  if (curr_no_ > in.data_.nums())
-    curr_no_ = 0;
-}
-
-template <typename XPU, typename DT>
-void DataBatch<XPU, DT>::rand (const DataBuffer<DT> &in)
-{ curr_no_ = std::max (0, ::rand() % in.data_.nums() - dnums_);  // TODO
-   data_.copy (in. data_.section (curr_no_, curr_no_+dnums_));
-  label_.copy (in.label_.section (curr_no_, curr_no_+dnums_));
-}
-#ifdef __CUDACC__
-template void DataBatch<GPU, float>::send (DataBuffer<float> &in) const;
-template void DataBatch<GPU, float>::copy (const DataBuffer<float> &in);
-template void DataBatch<GPU, float>::next (const DataBuffer<float> &in);
-template void DataBatch<GPU, float>::rand (const DataBuffer<float> &in);
-#else
-template void DataBatch<CPU, float>::send (DataBuffer<float> &in) const;
-template void DataBatch<CPU, float>::copy (const DataBuffer<float> &in);
-template void DataBatch<CPU, float>::next (const DataBuffer<float> &in);
-template void DataBatch<CPU, float>::rand (const DataBuffer<float> &in);
-#endif
 
 #endif
