@@ -1,130 +1,253 @@
-#ifndef UTIL_H_
-#define UTIL_H_
+#ifndef BASE_H_
+#define BASE_H_
 
 #include <fstream>
+#include <sstream>
 #include <iostream>
 
-#include <vector>
+#include <functional>
+#include <memory>
+#include <regex>
+
+#include <map>
+#include <queue>
 #include <unordered_map>
+#include <vector>
 
-#include <thread>
-#include <mutex>
 #include <condition_variable>
+#include <mutex>
+#include <thread>
 
-#include <lz4.h>
 #include <glog/logging.h>
 #include <libconfig.h++>
+#include <lz4.h>
+#include <mysql/mysql.h>
 
 using std::vector;
 using std::string;
 
 class UnCopyable {
 protected:
-  UnCopyable () { }
-  ~UnCopyable() { }
+    UnCopyable () { }
+    ~UnCopyable() { }
 private:
-  UnCopyable (const UnCopyable&);
-  UnCopyable& operator= (const UnCopyable&);
+    UnCopyable (const UnCopyable&);
+    UnCopyable& operator= (const UnCopyable&);
 };
 
-class IFileStream: private UnCopyable {
+class IFileStream : private UnCopyable {
 public:
-  explicit IFileStream (const string path, std::ios_base::openmode mode);
-  ~IFileStream();
-  void read     (void *ptr, const int size);
-  void read_lz4 (void *ptr, const int size);
-  int read_size_eof ();  // TODO
-  unsigned char read_byte ();
+    explicit IFileStream (const string path, std::ios_base::openmode mode);
+    ~IFileStream () { fstream_.close(); }
+    std::streamsize get_size_eof ();  // TODO
+    void read (void *ptr, const int size);
+    void read_lz4 (void *ptr, const int size);
 private:
-  std::ifstream fp_;
-  string path_;
+    std::ifstream fstream_;
+    string path_;
 };
 
-class OFileStream: private UnCopyable {
+class OFileStream : private UnCopyable {
 public:
-  explicit OFileStream (const string path, std::ios_base::openmode mode);
-  ~OFileStream();
-  void write     (void *ptr, const int size);
-  void write_lz4 (void *ptr, const int size);
+    explicit OFileStream (const string path, std::ios_base::openmode mode);
+    ~OFileStream () { fstream_.close(); }
+    void write (void *ptr, const int size);
+    void write_lz4 (void *ptr, const int size);
 private:
-  std::ofstream fp_;
-  string path_;
+    std::ofstream fstream_;
+    string path_;
 };
 
-class GLogHelper: private UnCopyable {
+
+
+class GLogHelper : private UnCopyable {
 public:
-  explicit GLogHelper (char* program, const char* logdir);
-  ~GLogHelper();
+    explicit GLogHelper (char* program, const char* logdir);
+    ~GLogHelper () { google::ShutdownGoogleLogging (); }
 };
 
-class SyncCV: private UnCopyable {
+class SyncCV : private UnCopyable {
 public:
-  explicit SyncCV () : bval_(false), ival_(0) { };
-  void notify ();
-  void wait ();
+    explicit SyncCV () : bval_(false), ival_(0) { }
+    void notify ();
+    void wait ();
 private:
-  bool bval_;
-  int  ival_;
-  std::mutex mtx_;
-  std::condition_variable cv_;
+    bool bval_;
+    int  ival_;
+    std::mutex mtx_;
+    std::condition_variable cv_;
 };
+
+class TimeFormatter : private UnCopyable {
+public:
+    explicit TimeFormatter ();
+    void set_time (const string& hour);
+    void get_hour (string& hour) const;
+    void set_second_plus (const int second);
+private:
+    std::tm time_;
+};
+
+
 
 class ParaModel {
 public:
-  explicit ParaModel ();
-  void set_para (const libconfig::Config &cfg);
+    explicit ParaModel () { }
+    explicit ParaModel (const libconfig::Config& cfg);
 public:
-  bool if_train;
-  bool if_test;
-  bool if_update;
-  string path;
+    int loss_type = 0;
+    bool if_train;
+    bool if_infer;
+    bool if_update;
+    string path;
 };
 
 class ParaDBData {
 public:
-  explicit ParaDBData () { };
-  explicit ParaDBData (const libconfig::Config &cfg, const string token);
+    explicit ParaDBData () { }
+    explicit ParaDBData (const libconfig::Config& cfg, const string token);
+    void set_time (const TimeFormatter& tf);
 public:
-  string path;
-  int numRows;
-  int threads;
-  int verbose;
+    string select;
+    string from;
+};
+
+
+
+extern std::map<int, int> coco_cat_id_map;
+extern std::map<int, int> coco_voc_id_map;
+extern vector<int> voc_palette;
+
+struct COCOCategory {
+    int id;
+    string name;
+    string supercategory;
+};
+
+struct COCOCImage {
+    int id;
+    int rows;
+    int cols;
+    string file;
+};
+
+struct COCOPoly {
+    int id;
+    int image_id;
+    int category_id;
+    float area;
+    vector<int> size;  // rows cols
+    vector<float> bbox;
+    vector<vector<float>> polygon;
+};
+
+struct COCOMask {
+    bool operator< (const COCOMask& m) { return score < m.score; }
+    bool operator> (const COCOMask& m) { return score > m.score; }
+    int image_id;
+    int category_id;
+    float score;
+    vector<int> size;  // rows cols
+    vector<float> bbox;
+    vector<size_t> rlemask;
+};
+
+struct BoundBox {
+    explicit BoundBox (const float x, const float y, const float w, const float h) : u(y-h/2), d(y+h/2), l(x-w/2), r(x+w/2) { }
+    float u, d, l, r;  // 上下左右
 };
 
 class ParaFileData {
 public:
-  explicit ParaFileData () { };
-  explicit ParaFileData (const libconfig::Config &cfg, const string token);
+    explicit ParaFileData () { }
+    explicit ParaFileData (const libconfig::Config& cfg, const string token);
+    void split_data_anno (const ParaFileData& in, const int did, const int mod);
 public:
-  string type, data, mean, eigvec, eigval, label;
+    string data_type, data_path;
+    string anno_type, anno_path;
+    vector<string> file_list;
+    vector<COCOCategory> coco_cats;
+    std::unordered_map<string, int> file_anno;
+    std::unordered_map<string, vector<COCOPoly>> coco_poly;
+    std::unordered_map<string, vector<COCOMask>> coco_mask;
 };
 
-class ParaImage {
+void parse_coco_info (const string file, vector<COCOCategory>& categories, vector<COCOCImage>& images);
+void parse_coco_anno (const string file, std::unordered_map<int, vector<COCOPoly>>& poly_hmap);
+void parse_coco_anno (const string file, std::unordered_map<int, vector<COCOMask>>& mask_hmap);
+
+template <typename T>
+void sort_coco_anno (const vector<T>& annos, vector<T>& sorted);
+template <typename T>
+void hnms_coco_anno (const vector<T>& sorted, const float iou_min, vector<int>& kept);
+
+void rle_accumulation (vector<size_t>& rle);
+template <typename T>
+float iou (const T& A, const T& B);
+
+
+
+class ByteSet {
 public:
-  explicit ParaImage (const int a, const int b) : rows(a), cols(b) { }
-  int rows, cols;
+    explicit ByteSet (const size_t nums);
+    ~ByteSet();
+    void reset();
+public:
+    unsigned char  mark_;
+    unsigned char* data_;
+    size_t nums_;
 };
 
-class MetaImage {
+class ByteSetPool {
 public:
-  void init (const string &a, const string &b, const string &c);
-  void init (const ParaFileData &pd);
-  void init (const MetaImage &in, const int did, const int mod);
-  void get_image_list ();
-  void get_label_list ();
-public:
-  string suffix;
-  string image_path;
-  string label_path;
-  vector<string> imgList;
-  std::unordered_map<string, int> label_map;
+    explicit ByteSetPool (const size_t nums, const size_t size);
+    std::shared_ptr<ByteSet> get ();
+    void collect (std::shared_ptr<ByteSet> byteSet);
+private:
+    std::deque<std::shared_ptr<ByteSet>> pool_;
+    mutable std::mutex mtx_;
+    int nums_;
 };
 
-void random_index (const int cnt, vector<int> &randIdx);
-void get_mem_usage ();
-void get_dir_list  (const string &dirRoot, int level, vector<string> &dirList);
-void get_file_list (const string &folder,  const string &suffix, vector<string> &fileList);
-void get_path_list (const string &dirRoot, const string &suffix, vector<string> &pathList);
-string replace (string &in, const string &subset, const string &section);
+
+
+template <typename T>
+class TaskPool : private UnCopyable {
+public:
+    bool get (T& task);
+    void add (const T& task);
+    void stop ();
+private:
+    std::queue<T> pool_;
+    bool runnable_ = true;
+    mutable std::mutex mtx_;
+    std::condition_variable cv_;
+};
+
+class ThreadPool {
+public:
+    explicit ThreadPool (const size_t threads = 6);
+    ~ThreadPool ();
+    void run ();
+private:
+    TaskPool<std::function<void()>> tasks_;
+    vector<std::thread> threads_;
+};
+
+
+
+vector<string> get_dir_list (const string& dirRoot);
+vector<string> get_file_list (const string& folder, const std::regex& suffix = std::regex (".*"));
+
+std::stringstream read_file (const string& path);
+void save_file (const string& path, const std::stringstream& sstr, std::ios_base::openmode mode = std::ios::trunc);
+
+void parse_row (const string& raw, const string& delim, vector<string>& cols);
+void convert_row (const char** raw, const int numField, vector<string>& cols);
+
+template <typename DT>
+DT dist_l2 (const DT* x, const DT* y, const size_t cnt);
+template <typename DT>
+DT dist_ip (const DT* x, const DT* y, const size_t cnt);
 
 #endif
