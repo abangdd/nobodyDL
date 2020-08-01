@@ -1,33 +1,32 @@
-CXX = g++
-CXXFLAGS = -O2 -g -Wall -Wshadow \
-	   -fPIC -fopenmp -pipe -march=native -mfpmath=sse -msse2 -ftracer -fivopts -fforce-addr -std=c++11# -v
-CXXDEBUG = -O0 -g
-CXXGPROF = -O0 -pg
+CPP = g++
+CPPFLAGS = -O2 -g -Wall -Wshadow -fPIC -fopenmp -pipe -march=native -mfpmath=sse -msse2 -ffast-math -std=c++11# -v
+CPPDEBUG = -O0 -g
+CPPGPROF = -O0 -pg
 
-NVFLAGS  = -O2 -g -G -lineinfo -gencode arch=compute_52,code=sm_52 -gencode arch=compute_35,code=sm_35 -std=c++11
+NVFLAGS  = -O2 -g -gencode arch=compute_61,code=sm_61 --use_fast_math -std=c++11
 
 INC = -I /usr/local/cuda/include -I /opt/intel/mkl/include
-LIB = -Wl,-dy -lconfig++ -lglog -lgflags \
+LIB = -Wl,-dy -lmysqlclient -lcityhash -lconfig++ -lglog -lgflags -llz4 \
       -Wl,-dy -L /opt/intel/mkl/lib/intel64/ -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core \
-      -Wl,-dy -L /opt/intel/lib/intel64/ -liomp5 \
-      -Wl,-dy -L /usr/local/cuda/lib64 -lcuda -lcudart -lcublas -lcurand -lcusparse -lcudnn \
-      -Wl,-dy -ldl -lm
-LIBXXX = -Wl,-dn -lconfig++ -lglog -lgflags \
+      -Wl,-dy -L /opt/intel/lib/intel64_lin/ -liomp5 \
+      -Wl,-dy -L /usr/local/cuda/lib64 -lcuda -lcudart -lcublas -lcurand -lcusparse -lcudnn -lnccl \
+      -Wl,-dy -lz -ldl -lm -lstdc++fs
+LIBXXX = -Wl,-dn -lmysqlclient -lcityhash -lconfig++ -lglog -lgflags -llz4 \
       -Wl,--start-group \
       /opt/intel/mkl/lib/intel64/libmkl_intel_lp64.a \
       /opt/intel/mkl/lib/intel64/libmkl_intel_thread.a \
       /opt/intel/mkl/lib/intel64/libmkl_core.a \
-      /opt/intel/lib/intel64/libiomp5.a \
+      /opt/intel/lib/intel64_lin/libiomp5.a \
       -Wl,--end-group \
-      -Wl,-dy -L /usr/local/cuda/lib64 -lcuda -lcudart -lcublas -lcurand -lcusparse -lcudnn \
-      -Wl,-dy -lssl -lcrypto -ldl -lm
+      -Wl,-dy -L /usr/local/cuda/lib64 -lcuda -lcudart -lcublas -lcurand -lcusparse -lcudnn -lnccl \
+      -Wl,-dy -lssl -lcrypto -lz -ldl -lm -lstdc++fs
 
 CV_INC = `pkg-config opencv --cflags` $(INC)
 CV_LIB = `pkg-config opencv --libs`   $(LIB)
 
-UT_DIR = ./util/
+UT_DIR = ./base/
 DF_DIR = ./dataformat/
-IM_DIR = ./image/
+IM_DIR = ./image/ # ./segment/
 TS_DIR = ./tensor/
 ML_DIR = ./learning/ ./optimization/
 NN_DIR = ./nnet/
@@ -51,42 +50,42 @@ NN_CUO = $(patsubst %.cpp, %.cuo, $(NN_SRC))
 
 .PHONY: clean cleanobj
 
-PROGRAMS = df_image df_mean nnetMain
+PROGRAMS = df_imagenet df_coco_seg nnetMain nnetInfer knnGraph knnBrute
 
 all: $(PROGRAMS)
 
 clean:
-	rm df_image df_mean nnetMain *.a
+	rm df_imagenet df_coco_seg nnetMain nnetInfer knnGraph knnBrute *.a
 cleanobj:
 	@rm $(UT_OBJ) $(IM_OBJ) $(TS_OBJ) $(TS_CUO) $(ML_OBJ) $(ML_CUO) $(NN_OBJ) $(NN_CUO)
 
 
 
-$(UT_OBJ) : %.o : %.cpp ./include/util.h
-	$(CXX) $(CXXFLAGS) $(INC) -c $< -o $@
+$(UT_OBJ) : %.o : %.cpp ./include/base.h
+	$(CPP) $(CPPFLAGS) $(INC) -c $< -o $@
 
-$(TS_OBJ)  : %.o   : %.cpp ./include/tensor.h ./include/xpu.h ./include/expr.h
-	$(CXX) $(CXXFLAGS) $(INC) -c $< -o $@
-$(ML_OBJ)  : %.o   : %.cpp ./include/optimization.h
-	$(CXX) $(CXXFLAGS) $(INC) -c $< -o $@
+$(TS_OBJ)  : %.o   : %.cpp ./include/tensor.h ./include/sparse.h ./include/xpu.h ./include/expr.h
+	$(CPP) $(CPPFLAGS) $(INC) -c $< -o $@
+$(ML_OBJ)  : %.o   : %.cpp ./include/learning.h ./include/optimization.h
+	$(CPP) $(CPPFLAGS) $(INC) -c $< -o $@
 $(NN_OBJ)  : %.o   : %.cpp ./include/nnet.h
-	$(CXX) $(CXXFLAGS) $(INC) -c $< -o $@
+	$(CPP) $(CPPFLAGS) $(INC) -c $< -o $@
 
-$(TS_CUO)  : %.cuo : %.cpp ./include/tensor.h ./include/xpu.h ./include/expr.h
+$(TS_CUO)  : %.cuo : %.cpp ./include/tensor.h ./include/sparse.h ./include/xpu.h ./include/expr.h
 	nvcc -x cu -ccbin=g++ -Xcompiler -fPIC -DNDEBUG $(NVFLAGS) $(INC) -c $< -o $@
-$(ML_CUO)  : %.cuo : %.cpp ./include/optimization.h
+$(ML_CUO)  : %.cuo : %.cpp ./include/learning.h ./include/optimization.h
 	nvcc -x cu -ccbin=g++ -Xcompiler -fPIC -DNDEBUG $(NVFLAGS) $(INC) -c $< -o $@
 $(NN_CUO)  : %.cuo : %.cpp ./include/nnet.h
 	nvcc -x cu -ccbin=g++ -Xcompiler -fPIC -DNDEBUG $(NVFLAGS) $(INC) -c $< -o $@
 
 
-$(IM_OBJ)  : %.o : %.cpp ./include/image.h
-	$(CXX) $(CXXFLAGS) $(CV_INC) -c $< -o $@
+$(IM_OBJ)  : %.o : %.cpp ./include/image.h ./include/segment.h
+	$(CPP) $(CPPFLAGS) $(CV_INC) -c $< -o $@
 
 libtensor.so: $(TS_OBJ) $(TS_CUO)
-	@$(CXX) -shared -fPIC -o $@ $(TS_OBJ) $(TS_CUO)
+	@$(CPP) -shared -fPIC -o $@ $(TS_OBJ) $(TS_CUO)
 libnnet.so:   $(NN_OBJ) $(NN_CUO)
-	@$(CXX) -shared -fPIC -o $@ $(NN_OBJ) $(NN_CUO)
+	@$(CPP) -shared -fPIC -o $@ $(NN_OBJ) $(NN_CUO)
 
 libtensor.a: $(TS_OBJ) $(TS_CUO)
 	@ar -cr $@ $(TS_OBJ) $(TS_CUO)
@@ -97,12 +96,22 @@ libnnet.a:   $(ML_OBJ) $(ML_CUO) $(NN_OBJ) $(NN_CUO)
 
 
 
-df_mean:  ./dataformat/df_mean.cpp  $(UT_OBJ) $(IM_OBJ) libtensor.a
-	@$(CXX) $(CXXFLAGS) $(CV_INC) ./dataformat/$@.cpp -o $@ $(UT_OBJ) $(IM_OBJ) -L. -ltensor $(CV_LIB)
+df_imagenet: ./dataformat/df_imagenet.cpp $(UT_OBJ) $(IM_OBJ) libtensor.a
+	@$(CPP) $(CPPFLAGS) $(CV_INC) ./dataformat/$@.cpp -o $@ $(UT_OBJ) $(IM_OBJ) -L. -ltensor $(CV_LIB)
 
-df_image: ./dataformat/df_image.cpp $(UT_OBJ) $(IM_OBJ) libtensor.a
-	@$(CXX) $(CXXFLAGS) $(CV_INC) ./dataformat/$@.cpp -o $@ $(UT_OBJ) $(IM_OBJ) -L. -ltensor $(CV_LIB)
+df_coco_seg: ./dataformat/df_coco_seg.cpp $(UT_OBJ) $(IM_OBJ) libtensor.a
+	@$(CPP) $(CPPFLAGS) $(CV_INC) ./dataformat/$@.cpp -o $@ $(UT_OBJ) $(IM_OBJ) -L. -ltensor $(CV_LIB)
+
+
+
+knnBrute:  knnBrute.cpp  $(UT_OBJ) libtensor.a libml.a
+	$(CPP) $(CPPFLAGS) $(CV_INC) $@.cpp -o $@ $(UT_OBJ) $(IM_OBJ) -L. -lml -L. -ltensor $(CV_LIB)
+
+knnGraph:  knnGraph.cpp  $(UT_OBJ) libtensor.a libml.a
+	$(CPP) $(CPPFLAGS) $(CV_INC) $@.cpp -o $@ $(UT_OBJ) $(IM_OBJ) -L. -lml -L. -ltensor $(CV_LIB)
 
 nnetMain:  nnetMain.cpp  $(UT_OBJ) $(IM_OBJ) libtensor.a libnnet.a
-	$(CXX) $(CXXFLAGS) $(CV_INC) $@.cpp -o $@ $(UT_OBJ) $(IM_OBJ) -L. -lnnet -L. -ltensor $(CV_LIB)
+	$(CPP) $(CPPFLAGS) $(CV_INC) $@.cpp -o $@ $(UT_OBJ) $(IM_OBJ) -L. -lnnet -L. -ltensor $(CV_LIB)
 
+nnetInfer:  nnetInfer.cpp  $(UT_OBJ) $(IM_OBJ) libtensor.a libnnet.a
+	$(CPP) $(CPPFLAGS) $(CV_INC) $@.cpp -o $@ $(UT_OBJ) $(IM_OBJ) -L. -lnnet -L. -ltensor $(CV_LIB)
