@@ -3,101 +3,98 @@
 
 #include "tensor.h"
 
-enum optim_t
-{ kLBFGS = 1,
-  kVSGD	 = 2
+enum optim_t {
+    kLBFGS = 1,
+    kBSGD = 2
 };
 
 class ParaOptim {
 public:
-  explicit ParaOptim ();
-  int  get_optim_type (const char *t);
-  void get_optim_info ();
-  void set_para (const int now_round, const int max_round);
+    ParaOptim ();
+    int  get_optim_type (const char* t);
+    void get_optim_info ();
+    void set_para (const int now_round, const int max_round);
 public:
-  int type;
-  int algo;
-  int schedule;
-  int lossType;
-  bool isFixed;
-  float momentum;
-  float lrate, decay;
-  float lr_base;
-  float lr_last;
-  float wd_base;
+    int type;
+    int algo;
+    float momentum, decay;
+    float lrate = 0.1, multi;
+    float lr_base, c1 = 1e-4;
+    float lr_last, c2 = 0.9;
 };
+
+
 
 template <typename XPU, typename DT>
 class OptimBase {
 public:
-  explicit OptimBase (ParaOptim &po, const int did, Tensor<XPU, DT> &weight, Tensor<XPU, DT> &wgrad) :
-    po_(po), did_(did), wmat_(weight), gmat_(wgrad) { }
-  virtual ~OptimBase () { }
-  virtual void update () = 0;
-  virtual void get_direction (const int k) = 0;
-  virtual void reduce_notify () { reduce_.notify ();  }
-  virtual void accept_notify () { accept_.notify ();  }
-  virtual void reduce_wait (OptimBase<XPU, DT> &in)  { in.reduce_.wait ();  }
-  virtual void accept_wait (OptimBase<XPU, DT> &in)  { in.accept_.wait ();  }
-  virtual void reduce_gmat (OptimBase<XPU, DT> &in)  { gmat_.blas_axpy (in.gmat_, (DT)1.);  cuda_stream_sync (did_);  }
-  virtual void accept_wmat (OptimBase<XPU, DT> &in)  { wmat_.copy      (in.wmat_);          cuda_stream_sync (did_);  }
-  virtual void reduce_scal (const DT alpha)          { gmat_.blas_scal (alpha);  }
+    using opt_cb = std::function<void(DT&)>;
+    OptimBase (ParaOptim& po, const int did, Tensor<XPU, DT>& wmat, Tensor<XPU, DT>& gmat) : po_(po), did_(did), wmat_(wmat), gmat_(gmat) { }
+    virtual ~OptimBase () { }
+    virtual void init_model () { }
+    virtual void swap_model () { }
+    virtual void ccl_update ();
+    virtual void update () { };
+    virtual void optimize (opt_cb estimate, opt_cb validate) { }
+    virtual void reduce_notify () { reduce_.notify (); }
+    virtual void accept_notify () { accept_.notify (); }
+    virtual void reduce_wait (OptimBase<XPU, DT>& in) { in.reduce_.wait (); }
+    virtual void accept_wait (OptimBase<XPU, DT>& in) { in.accept_.wait (); }
+    virtual void reduce_gmat (OptimBase<XPU, DT>& in) { gmat_.blas_axpy (in.gmat_, 1);  XPU::sync_stream (did_); }
+    virtual void accept_wmat (OptimBase<XPU, DT>& in) { wmat_.copy (in.wmat_);  XPU::sync_stream (did_); }
 public:
-  ParaOptim &po_;
-  int did_;
-  Tensor<XPU, DT> &wmat_, &gmat_;
-  Tensor<XPU, DT> dloss_;
-  Tensor<XPU, DT> invc_;
-  DT loss_k, step_length;
-  SyncCV reduce_;
-  SyncCV accept_;
+    ParaOptim& po_;
+    int did_ = 0;
 private:
-  DT alpha_0, alpha_j, alpha_low, alpha_high;
-  DT f_phi_0, f_phi_j, f_phi_low, f_phi_high, f_phi_alpha;
-  DT d_phi_0, d_phi_j, d_phi_low, d_phi_high, d_phi_alpha;  // directional derivative
+    Tensor<XPU, DT> &wmat_;
+    Tensor<XPU, DT> &gmat_;
+    SyncCV reduce_;
+    SyncCV accept_;
 };
 
-typedef OptimBase<GPU, float>  OptimBaseGPUf;
-typedef OptimBase<CPU, float>  OptimBaseCPUf;
-typedef OptimBase<GPU, double> OptimBaseGPUd;
-typedef OptimBase<CPU, double> OptimBaseCPUd;
+using OptimBaseGPUf = OptimBase<GPU, float>;
+using OptimBaseCPUf = OptimBase<CPU, float>;
+using OptimBaseGPUd = OptimBase<GPU, double>;
+using OptimBaseCPUd = OptimBase<CPU, double>;
 
 template <typename XPU, typename DT>
-class OptimVSGD : public OptimBase<XPU, DT> {
+class OptimBSGD : public OptimBase<XPU, DT> {
 public:
-  OptimVSGD (ParaOptim &po, const int did, Tensor<XPU, DT> &weight, Tensor<XPU, DT> &wgrad);
-  void get_direction (const int k) { };
-  void update ();
-  void update_sgd ();
-  void update_nag ();
+    using opt_cb = std::function<void(DT&)>;
+    OptimBSGD (ParaOptim& po, const int did, Tensor<XPU, DT>& wmat, Tensor<XPU, DT>& gmat);
+    void swap_model ();
+    void update ();
 private:
-  ParaOptim &po_;
-  int did_;
-  Tensor<XPU, DT> &wmat_, &gmat_;
-  Tensor<XPU, DT>  mmat_,  hmat_;
-  int epoch;
+    void update_sgd ();
+    void update_nag ();
+    ParaOptim& po_;
+    int did_ = 0, epoch = 0;
+    Tensor<XPU, DT> &wmat_, mmat_;
+    Tensor<XPU, DT> &gmat_, hmat_;
 };
 
 template <typename XPU, typename DT>
 class OptimLBFGS : public OptimBase<XPU, DT> {
 public:
-  OptimLBFGS (ParaOptim &po, const int did, Tensor<XPU, DT> &weight, Tensor<XPU, DT> &wgrad);
-  void get_direction (const int k);
-  void set_s_y_rho_h (const int k);
-  void update () { }
-  bool terminate ();
+    using opt_cb = std::function<void(DT&)>;
+    OptimLBFGS (ParaOptim& po, const int did, Tensor<XPU, DT>& wmat, Tensor<XPU, DT>& gmat);
+    void init_model ();
+    void optimize (opt_cb estimate, opt_cb validate);
 private:
-  int did_;
-  Tensor<XPU, DT> dir;
-  Tensor<XPU, DT> smat_,  ymat_;
-  Tensor<XPU, DT> wvec_k, wvec_j;
-  Tensor<XPU, DT> gvec_k, gvec_j;
-  std::vector<DT> alpha, beta, rho;
-  DT H0;
-  int hsize;
+    bool terminate (const int k);
+    void set_direction (const int k);
+    void set_smat_ymat (const int k);
+    void back_tracking (opt_cb estimate, opt_cb validate);
+    ParaOptim& po_;
+    int did_ = 0, hsize = 8;
+    Tensor<XPU, DT> &wmat_, wold_, smat_, hmat_;
+    Tensor<XPU, DT> &gmat_, gold_, ymat_, dmat_;
+    vector<DT> alpha, beta, yts, yty;
+    DT H0 = 1, loss_old, loss_new, loss_val;
+    vector<DT> loss_his;
 };
 
 template <typename XPU, typename DT>
-OptimBase<XPU, DT>* create_optim (ParaOptim &po, const int did, Tensor<XPU, DT> &weight, Tensor<XPU, DT> &wgrad);
+std::shared_ptr<OptimBase<XPU, DT>> create_optim (ParaOptim& po, const int did, Tensor<XPU, DT>& wmat, Tensor<XPU, DT>& gmat);
 
 #endif
