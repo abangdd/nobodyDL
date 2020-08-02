@@ -32,7 +32,6 @@ public:
     OptimBase (ParaOptim& po, const int did, Tensor<XPU, DT>& wmat, Tensor<XPU, DT>& gmat) : po_(po), did_(did), wmat_(wmat), gmat_(gmat) { }
     virtual ~OptimBase () { }
     virtual void init_model () { }
-    virtual void swap_model () { }
     virtual void ccl_update ();
     virtual void update () { };
     virtual void optimize (opt_cb estimate, opt_cb validate) { }
@@ -62,7 +61,6 @@ class OptimBSGD : public OptimBase<XPU, DT> {
 public:
     using opt_cb = std::function<void(DT&)>;
     OptimBSGD (ParaOptim& po, const int did, Tensor<XPU, DT>& wmat, Tensor<XPU, DT>& gmat);
-    void swap_model ();
     void update ();
 private:
     void update_sgd ();
