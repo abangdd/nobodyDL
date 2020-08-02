@@ -6,6 +6,8 @@
 
 # coco分割benchmark结果
 我所用的模型十分简单，只包括空洞卷积、转置卷积、RELU、sigmoid loss这四种，相当于DeepLab的大幅简化，故名HelloWorld
+GluonCV的统计口径不包括背景类，也不统计假阳，并去掉了物体小于1000像素的图片，十分怪异，但分割结果的视觉效果与我十分相似
+Mask-RCNN因为基于检测框而设计，与我存在系统性差异
 ![coco分割benchmark结果](20200802190214.png)
 
 ## coco分割示例
