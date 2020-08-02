@@ -144,7 +144,7 @@ void LayerConv<XPU>::init_model () {
     bias_.create (bias_shape, did_);
     gias_.create (bias_shape, did_);
 
-    pl_.sigma = sqrt (1.6/dims_);
+    pl_.sigma = sqrt (1./dims_);
     wmat_.init (rand_, GAUSSIAN, 0.f, pl_.sigma);
     bias_.init (pl_.bias);
 #ifdef __CUDACC__
