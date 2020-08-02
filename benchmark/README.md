@@ -1,5 +1,7 @@
 # imagenet分类benchmark结果
 我所用的模型十分简单，只包括分组卷积、RELU、dropout、avg pool、softmax loss这五种，故名HelloWorld
+我也曾测试过batch norm、residual、label smoothing等标准模块，可惜均不work，只是loss初期下降的很快而已
+其他drop block、drop path、mixup等数据扩充技巧因为需要训练时间翻倍，不曾测试
 ![imagenet分类](20200802190159.png)
 
 # coco分割benchmark结果
