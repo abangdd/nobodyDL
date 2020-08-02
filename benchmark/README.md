@@ -1,11 +1,11 @@
 # imagenet分类benchmark结果
-我所用的模型十分简单，只包括分组卷积、RELU、dropout、avg pool、softmax loss这五种，故名HelloWorld  
+我所用的模型十分简单，只包括分组卷积、RELU、dropout、avg pool、softmax loss这五种，相当于Inception的大幅简化，故名HelloWorld  
 测试过batch norm、residual、label smoothing等标准模块，对最终结果没有影响，只是loss初期下降的很快而已  
 其他诸如drop block、drop path、mixup等数据扩充技巧因为需要训练时间翻倍，不曾测试  
 ![imagenet分类](20200802190159.png)
 
 # coco分割benchmark结果
-我所用的模型十分简单，只包括空洞卷积、转置卷积、RELU、sigmoid loss这四种，故名HelloWorld
+我所用的模型十分简单，只包括空洞卷积、转置卷积、RELU、sigmoid loss这四种，相当于DeepLab的大幅简化，故名HelloWorld
 ![coco分割benchmark结果](20200802190214.png)
 
 ## coco分割示例
