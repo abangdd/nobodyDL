@@ -1,8 +1,10 @@
 # imagenet分类benchmark结果
 ![imagenet分类](20200802190159.png)
+我所用的模型十分简单，只包括分组卷积、RELU、dropout、avg pool、softmax loss这五种，故名HelloWorld
 
 # coco分割benchmark结果
 ![coco分割benchmark结果](20200802190214.png)
+我所用的模型十分简单，只包括空洞卷积、转置卷积、RELU、sigmoid loss这四种，故名HelloWorld
 
 ## coco分割示例
 coco原图1
