@@ -28,7 +28,7 @@ UT_DIR = ./base/
 DF_DIR = ./dataformat/
 IM_DIR = ./image/ # ./segment/
 TS_DIR = ./tensor/
-ML_DIR = ./learning/ ./optimization/
+ML_DIR = ./optimization/
 NN_DIR = ./nnet/
 
 UT_SRC = $(foreach dir, $(UT_DIR), $(wildcard $(dir)*.cpp))
@@ -66,14 +66,14 @@ $(UT_OBJ) : %.o : %.cpp ./include/base.h
 
 $(TS_OBJ)  : %.o   : %.cpp ./include/tensor.h ./include/xpu.h ./include/expr.h
 	$(CPP) $(CPPFLAGS) $(INC) -c $< -o $@
-$(ML_OBJ)  : %.o   : %.cpp ./include/learning.h ./include/optimization.h
+$(ML_OBJ)  : %.o   : %.cpp ./include/optimization.h
 	$(CPP) $(CPPFLAGS) $(INC) -c $< -o $@
 $(NN_OBJ)  : %.o   : %.cpp ./include/nnet.h
 	$(CPP) $(CPPFLAGS) $(INC) -c $< -o $@
 
 $(TS_CUO)  : %.cuo : %.cpp ./include/tensor.h ./include/xpu.h ./include/expr.h
 	nvcc -x cu -ccbin=g++ -Xcompiler -fPIC -DNDEBUG $(NVFLAGS) $(INC) -c $< -o $@
-$(ML_CUO)  : %.cuo : %.cpp ./include/learning.h ./include/optimization.h
+$(ML_CUO)  : %.cuo : %.cpp ./include/optimization.h
 	nvcc -x cu -ccbin=g++ -Xcompiler -fPIC -DNDEBUG $(NVFLAGS) $(INC) -c $< -o $@
 $(NN_CUO)  : %.cuo : %.cpp ./include/nnet.h
 	nvcc -x cu -ccbin=g++ -Xcompiler -fPIC -DNDEBUG $(NVFLAGS) $(INC) -c $< -o $@
