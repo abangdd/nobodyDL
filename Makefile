@@ -64,14 +64,14 @@ cleanobj:
 $(UT_OBJ) : %.o : %.cpp ./include/base.h
 	$(CPP) $(CPPFLAGS) $(INC) -c $< -o $@
 
-$(TS_OBJ)  : %.o   : %.cpp ./include/tensor.h ./include/sparse.h ./include/xpu.h ./include/expr.h
+$(TS_OBJ)  : %.o   : %.cpp ./include/tensor.h ./include/xpu.h ./include/expr.h
 	$(CPP) $(CPPFLAGS) $(INC) -c $< -o $@
 $(ML_OBJ)  : %.o   : %.cpp ./include/learning.h ./include/optimization.h
 	$(CPP) $(CPPFLAGS) $(INC) -c $< -o $@
 $(NN_OBJ)  : %.o   : %.cpp ./include/nnet.h
 	$(CPP) $(CPPFLAGS) $(INC) -c $< -o $@
 
-$(TS_CUO)  : %.cuo : %.cpp ./include/tensor.h ./include/sparse.h ./include/xpu.h ./include/expr.h
+$(TS_CUO)  : %.cuo : %.cpp ./include/tensor.h ./include/xpu.h ./include/expr.h
 	nvcc -x cu -ccbin=g++ -Xcompiler -fPIC -DNDEBUG $(NVFLAGS) $(INC) -c $< -o $@
 $(ML_CUO)  : %.cuo : %.cpp ./include/learning.h ./include/optimization.h
 	nvcc -x cu -ccbin=g++ -Xcompiler -fPIC -DNDEBUG $(NVFLAGS) $(INC) -c $< -o $@
