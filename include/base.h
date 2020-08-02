@@ -78,16 +78,6 @@ private:
     std::condition_variable cv_;
 };
 
-class TimeFormatter : private UnCopyable {
-public:
-    explicit TimeFormatter ();
-    void set_time (const string& hour);
-    void get_hour (string& hour) const;
-    void set_second_plus (const int second);
-private:
-    std::tm time_;
-};
-
 
 
 class ParaModel {
@@ -100,16 +90,6 @@ public:
     bool if_infer;
     bool if_update;
     string path;
-};
-
-class ParaDBData {
-public:
-    explicit ParaDBData () { }
-    explicit ParaDBData (const libconfig::Config& cfg, const string token);
-    void set_time (const TimeFormatter& tf);
-public:
-    string select;
-    string from;
 };
 
 
@@ -184,30 +164,6 @@ void hnms_coco_anno (const vector<T>& sorted, const float iou_min, vector<int>& 
 void rle_accumulation (vector<size_t>& rle);
 template <typename T>
 float iou (const T& A, const T& B);
-
-
-
-class ByteSet {
-public:
-    explicit ByteSet (const size_t nums);
-    ~ByteSet();
-    void reset();
-public:
-    unsigned char  mark_;
-    unsigned char* data_;
-    size_t nums_;
-};
-
-class ByteSetPool {
-public:
-    explicit ByteSetPool (const size_t nums, const size_t size);
-    std::shared_ptr<ByteSet> get ();
-    void collect (std::shared_ptr<ByteSet> byteSet);
-private:
-    std::deque<std::shared_ptr<ByteSet>> pool_;
-    mutable std::mutex mtx_;
-    int nums_;
-};
 
 
 
