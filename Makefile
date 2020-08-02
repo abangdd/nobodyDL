@@ -79,7 +79,7 @@ $(NN_CUO)  : %.cuo : %.cpp ./include/nnet.h
 	nvcc -x cu -ccbin=g++ -Xcompiler -fPIC -DNDEBUG $(NVFLAGS) $(INC) -c $< -o $@
 
 
-$(IM_OBJ)  : %.o : %.cpp ./include/image.h ./include/segment.h
+$(IM_OBJ)  : %.o : %.cpp ./include/image.h
 	$(CPP) $(CPPFLAGS) $(CV_INC) -c $< -o $@
 
 libtensor.so: $(TS_OBJ) $(TS_CUO)
