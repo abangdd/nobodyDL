@@ -176,18 +176,18 @@ public:
     void blas_vinv (const Tensor<XPU, DT>& in);
     void blas_vsqr (const Tensor<XPU, DT>& in);
 public:
-    DT reduce_sum () const;
-    DT reduce_max () const;
-    void reduce_sum (const Tensor<XPU, DT>& in);
-    void reduce_max (const Tensor<XPU, DT>& in);
-    void reduce_min (const Tensor<XPU, DT>& in);
-    void reduce_var (const Tensor<XPU, DT>& in);
-    void repeat_cpy (const Tensor<XPU, DT>& in);
-    void repeat_add (const Tensor<XPU, DT>& in);
-    void repeat_sub (const Tensor<XPU, DT>& in);
-    void repeat_mul (const Tensor<XPU, DT>& in);
-    void repeat_div (const Tensor<XPU, DT>& in);
-    void repeat_sub_mean (Tensor<XPU, DT>& mid);
+    DT reduce_sum () const {};
+    DT reduce_max () const {};
+    void reduce_sum (const Tensor<XPU, DT>& in) {};
+    void reduce_max (const Tensor<XPU, DT>& in) {};
+    void reduce_min (const Tensor<XPU, DT>& in) {};
+    void reduce_var (const Tensor<XPU, DT>& in) {};
+    void repeat_cpy (const Tensor<XPU, DT>& in) {};
+    void repeat_add (const Tensor<XPU, DT>& in) {};
+    void repeat_sub (const Tensor<XPU, DT>& in) {};
+    void repeat_mul (const Tensor<XPU, DT>& in) {};
+    void repeat_div (const Tensor<XPU, DT>& in) {};
+    void repeat_sub_mean (Tensor<XPU, DT>& mid) {};
 public:
     int rows () const { return shape.rows; }
     int cols () const { return shape.cols; }
@@ -292,22 +292,6 @@ public:
     Tensor<XPU, DT> pred_;
     Tensor<XPU, DT> anno_;
     Tensor<XPU, DT> eval_;
-};
-
-template <typename XPU, typename DT>
-class TensorDict {
-public:
-    void save_txt (const string& file);  // 必须有表头
-    void read_txt (const string& file);  // 必须有表头
-    void save_bin (const string& file, const bool save_name);
-    void load_bin (const string& file, const bool read_name);
-    void norm_l2 ();
-    DT point_dist_l2 (const int i, const int j) const;
-public:
-    std::unordered_map<string, int> nmap_;
-    vector<string>  name_;
-    Tensor<XPU, DT> data_;
-    int did_ = 0;
 };
 
 #endif
