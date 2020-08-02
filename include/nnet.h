@@ -217,8 +217,6 @@ public:
 private:
     void fprop (const int nid, const bool is_train);
     void bprop (const int nid);
-    void step_model (const int nid);
-    void swap_model (const int nid);
     void train_epoch (TensorBuffer<float>& buffer, TensorBatch<XPU, float>& batch, const int nid);
     void valid_epoch (TensorBuffer<float>& buffer, TensorBatch<XPU, float>& batch, const int nid);
     void infer_epoch (TensorBuffer<float>& buffer, TensorBatch<XPU, float>& batch, const int nid);
