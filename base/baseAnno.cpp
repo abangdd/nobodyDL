@@ -153,9 +153,6 @@ float iou_area (const vector<size_t>& A, const vector<size_t>& B) {
     const float inter_area = rle_inter(A, B);
     return inter_area / (rle_area(A) + rle_area(B) - inter_area + 1e-2);
 }
-float iou_area (const vector<float>& A, const vector<float>& B) {
-    return iou_area (BoundBox(A[0],A[1],A[2],A[3]), BoundBox(B[0],B[1],B[2],B[3]));
-}
 float iou_area (const COCOMask& A, const COCOMask& B) {
     return iou_area (A.bbox, B.bbox);
 }
