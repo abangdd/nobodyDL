@@ -14,7 +14,7 @@ COCO标注总体质量不高，误标漏标较为普遍，这会造成识别算�
 ## coco分割示例
 coco原图1
 ![coco原图1](20200801121730.png)
-coco标注1
+coco标注1（不同颜色代表不同类别）
 ![coco标注1](20200801120441.png)
 HelloWorld分割1（nobodyDL实现）
 ![HelloWorld分割1](20200801120608.png)
@@ -25,7 +25,7 @@ Mask-RCNN分割1（mmdetection实现）
 
 coco原图2
 ![coco原图2](20200801122545.png)
-coco标注2
+coco标注2（不同颜色代表不同类别）
 ![coco标注2](20200801122309.png)
 HelloWorld分割2（nobodyDL实现）
 ![HelloWorld分割2](20200801122420.png)
