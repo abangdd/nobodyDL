@@ -50,12 +50,11 @@ NN_CUO = $(patsubst %.cpp, %.cuo, $(NN_SRC))
 
 .PHONY: clean cleanobj
 
-PROGRAMS = df_imagenet df_coco_seg nnetMain nnetInfer knnGraph knnBrute
-
+PROGRAMS = df_imagenet df_coco_seg nnetMain nnetInfer 
 all: $(PROGRAMS)
 
 clean:
-	rm df_imagenet df_coco_seg nnetMain nnetInfer knnGraph knnBrute *.a
+	rm df_imagenet df_coco_seg nnetMain nnetInfer *.a
 cleanobj:
 	@rm $(UT_OBJ) $(IM_OBJ) $(TS_OBJ) $(TS_CUO) $(ML_OBJ) $(ML_CUO) $(NN_OBJ) $(NN_CUO)
 
