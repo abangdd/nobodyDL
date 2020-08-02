@@ -124,6 +124,12 @@ void hnms_coco_anno (const vector<T>& sorted, const float iou_min, vector<int>& 
 }
 template void hnms_coco_anno (const vector<COCOMask>& sorted, const float iou_min, vector<int>& kept);
 
+// rle累计
+void rle_accumulation (vector<size_t>& rle) {
+    for (size_t i = 1; i < rle.size(); ++i)
+        rle[i] += rle[i-1];
+}
+
 // 这里的rle是累计过的
 inline size_t rle_inter (const vector<size_t>& A, const vector<size_t>& B) {
     size_t area = 0;
@@ -153,9 +159,30 @@ float iou_area (const vector<size_t>& A, const vector<size_t>& B) {
     const float inter_area = rle_inter(A, B);
     return inter_area / (rle_area(A) + rle_area(B) - inter_area + 1e-2);
 }
+float iou_area (const BoundBox& A, const BoundBox& B) {
+    if (A.u > B.d || B.u > A.d || A.l > B.r || B.l > A.r)
+        return 0;
+    const float u = std::max (A.u, B.u);
+    const float d = std::min (A.d, B.d);
+    const float l = std::max (A.l, B.l);
+    const float r = std::min (A.r, B.r);
+    const float h = std::max (0.f, d-u);
+    const float w = std::max (0.f, r-l);
+    const float area_a = (A.d - A.u) * (A.r - A.l);
+    const float area_b = (B.d - B.u) * (B.r - B.l);
+    const float area_i = h * w;
+    return area_i / (area_a + area_b - area_i + 1e-16);
+}
+float iou_area (const vector<float>& A, const vector<float>& B) {
+    return iou_area (BoundBox(A[0],A[1],A[2],A[3]), BoundBox(B[0],B[1],B[2],B[3]));
+}
+float iou_area (const COCOMask& A, const COCOMask& B) {
+    return iou_area (A.bbox, B.bbox);
+}
 
 template <typename T>
 float iou (const T& A, const T& B) { return iou_area (A, B); }
+template float iou (const BoundBox& A, const BoundBox& B);
 template float iou (const COCOMask& A, const COCOMask& B);
 
 #endif
