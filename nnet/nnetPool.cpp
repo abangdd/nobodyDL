@@ -22,8 +22,7 @@ void LayerPool<XPU>::fprop (const bool is_train, const bool is_fixed) {
             dst_.expand_chls (src_, pl_.strd);
             break;
         default: // avg pool
-            dst_.reduce_sum (src_);
-            dst_.blas_scal (1.f/area_);
+            LOG (FATAL) << "not implemented pool method";
     }
 
     if (pl_.drop > 0 && is_train)
@@ -48,8 +47,7 @@ void LayerPool<XPU>::bprop (const bool is_prop_grad) {
             src_.expand_area (dst_, pl_.strd);
             break;
         default: // avg pool
-            dst_.blas_scal (1.f/area_);
-            src_.repeat_cpy (dst_);
+            LOG (FATAL) << "not implemented pool method";
     }
 }
 
