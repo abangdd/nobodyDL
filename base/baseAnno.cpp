@@ -123,3 +123,5 @@ void hnms_coco_anno (const vector<T>& sorted, const float iou_min, vector<int>& 
     }
 }
 template void hnms_coco_anno (const vector<COCOMask>& sorted, const float iou_min, vector<int>& kept);
+
+#endif
