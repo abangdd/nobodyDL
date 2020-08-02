@@ -1,6 +1,5 @@
 # imagenet分类和coco分割benchmark结果
-工具/作者 | 模型 | 训练 | 预测
-工具/作者 | 网络结构 | 层数 | 计算量 | 参数 | GPU | 迭代 | 时间 | 准确率
+
 ![imagenet分类和coco分割benchmark结果](20200802181745.png)
 
 
