@@ -18,7 +18,7 @@ coco标注1（不同颜色代表不同类别）
 ![coco标注1](20200801120441.png)
 HelloWorld分割1（nobodyDL实现）
 ![HelloWorld分割1](20200801120608.png)
-Mask-RCNN分割1（mmdetection实现）
+Mask-RCNN分割1（mmdetection实现，nobodyDL对结果做了可视化）
 ![Mask-RCNN分割1](20200801121555.png)
 
 
@@ -29,5 +29,5 @@ coco标注2（不同颜色代表不同类别）
 ![coco标注2](20200801122309.png)
 HelloWorld分割2（nobodyDL实现）
 ![HelloWorld分割2](20200801122420.png)
-Mask-RCNN分割2（mmdetection实现）
+Mask-RCNN分割2（mmdetection实现，nobodyDL对结果做了可视化）
 ![Mask-RCNN分割2](20200801122446.png)
